@@ -18,5 +18,5 @@ all: ${OBJECTS}
 
 cl: 
 	rm -rf ${OBJECTS}
-	rm main
+	rm main test
 
