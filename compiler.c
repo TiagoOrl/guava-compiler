@@ -18,11 +18,11 @@ int compileFile(const char * filename, const char * outFilename, int flags) {
     struct lexProcess * lexProcess = lexProcessCreate(process, &compilerLexFunctions, NULL);
 
     if (!lexProcess) {
-        return NULL;
+        return COMPILER_FAILED_WITH_ERRORS;
     }
 
     if (lex(lexProcess) != LEXICAL_ANALYSIS_ALL_OK) {
-        return NULL;
+        return COMPILER_FAILED_WITH_ERRORS;
     }
 
     //
