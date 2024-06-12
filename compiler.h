@@ -3,6 +3,14 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include "helpers/vector.h"
+#include "helpers/buffer.h"
+
+enum
+{
+    LEXICAL_ANALYSIS_ALL_OK,
+    LEXICAL_ANALYSIS_INPUT_ERROR
+};
 
 enum
 {
@@ -22,14 +30,14 @@ enum
     TOKEN_TYPE_NEWLINE
 };
 
-struct _pos 
+struct pos 
 {
     int line;
     int col;
     const char * filename;
-} pos;
+};
 
-struct _token 
+struct token 
 {
     int type;
     int flags;
@@ -52,11 +60,40 @@ struct _token
     // ex: (5 + 10 + 20)
     const char * between_brackets;
 
-} token;
+};
 
-struct _compileProcess
+
+struct lexProcess;
+typedef char (*LEX_PROCESS_NEXT_CHAR)(struct lexProcess* process);
+typedef char (*LEX_PROCESS_PEEK_CHAR)(struct lexProcess* process);
+typedef void (*LEX_PROCESS_PUSH_CHAR)(struct lexProcess* process, char c);
+
+struct lexProcessFunctions
+{
+    LEX_PROCESS_NEXT_CHAR nextChar;
+    LEX_PROCESS_PEEK_CHAR peekChar;
+    LEX_PROCESS_PUSH_CHAR pushChar;
+};
+
+struct lexProcess 
+{
+    struct pos pos;
+    struct vector * tokenVector;
+    struct compileProcess * compiler;
+
+    int currentExpressionCount;
+    struct buffer * parenthesesBuffer;
+    struct lexProcessFunctions * function;
+
+    void * private;
+    
+};
+
+struct compileProcess
 {
     int flags;
+
+    struct pos pos;
     struct _compileProcessInputFile 
     {
         FILE *fp;
@@ -64,9 +101,27 @@ struct _compileProcess
     } cFile;
     FILE * oFile;
 };
-typedef struct _compileProcess compileProcess;
 
 int compileFile(const char * filename, const char * out_filename, int flags);
-compileProcess * compileProcessCreate(const char * filename, const char * outFilename, int flags);
+struct compileProcess * compileProcessCreate(const char * filename, const char * outFilename, int flags);
+
+
+char compileProcessNextChar(struct lexProcess * lexProcess);
+char compileProcessPeekChar(struct lexProcess * lexProcess);
+void compileProcessPushChar(struct lexProcess * lexProcess, char c);
+
+
+
+struct lexProcess * lexProcessCreate(
+    struct compileProcess * compiler, 
+    struct lexProcessFunctions* functions,
+    void * private
+);
+void lexProcessFree(struct lexProcess * process);
+void * lexProcessPrivate(struct lexProcess * process);
+struct vector * lexProcessTokens(struct lexProcess * process);
+
+int lex(struct lexProcess * process);
+
 
 #endif

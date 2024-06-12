@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "compiler.h"
 
-compileProcess * compileProcessCreate(const char * filename, const char * outFilename, int flags) {
+struct compileProcess * compileProcessCreate(const char * filename, const char * outFilename, int flags) {
     FILE * file  = fopen(filename, "r");
 
     if (!file) 
@@ -18,10 +18,39 @@ compileProcess * compileProcessCreate(const char * filename, const char * outFil
         return NULL;
     }
     
-    compileProcess * process = calloc(1, sizeof(compileProcess));
+    struct compileProcess * process = calloc(1, sizeof(struct compileProcess));
     process->flags = flags;
     process->cFile.fp = file;
     process->oFile = outFile;
 
     return process;
+}
+
+
+char compileProcessNextChar(struct lexProcess * lexProcess) {
+    struct compileProcess * compiler = lexProcess->compiler;
+    compiler->pos.col += 1;
+
+    char c = getc(compiler->cFile.fp);
+
+    if (c == '\n')
+    {
+        compiler->pos.line += 1;
+        compiler->pos.col = 1;
+    }
+
+    return c;
+}
+
+char compileProcessPeekChar(struct lexProcess * lexProcess) {
+    struct compileProcess * compiler = lexProcess->compiler;
+    char c = getc(compiler->cFile.fp);
+    ungetc(c, compiler->cFile.fp);
+
+    return c;
+}
+
+void compileProcessPushChar(struct lexProcess * lexProcess, char c) {
+    struct compileProcess * compiler = lexProcess->compiler;
+    ungetc(c, compiler->cFile.fp);
 }
