@@ -106,6 +106,8 @@ int compileFile(const char * filename, const char * out_filename, int flags);
 struct compileProcess * compileProcessCreate(const char * filename, const char * outFilename, int flags);
 
 
+void compilerError(struct compileProcess * compiler, const char * msg, ...);
+void compilerWarning(struct compileProcess * compiler, const char * msg, ...);
 char compileProcessNextChar(struct lexProcess * lexProcess);
 char compileProcessPeekChar(struct lexProcess * lexProcess);
 void compileProcessPushChar(struct lexProcess * lexProcess, char c);
