@@ -12,6 +12,7 @@
 
 static struct lexProcess * lexProcess;
 static struct token tmpToken;
+struct token * readNextToken();
 
 
 static char peekc() {
@@ -57,6 +58,24 @@ unsigned long long readNumber() {
 }
 
 
+static struct token * lexerLastToken() {
+    return vector_back_or_null(lexProcess->tokenVector);
+}
+
+
+static struct token * handleWhitespace() {
+
+    struct token * lastToken = lexerLastToken();
+
+    if (lastToken) {
+        lastToken->whitespace = true;
+    }
+
+    nextc();
+    return readNextToken();
+}
+
+
 struct token * tokenCreate(struct token * _token) {
     memcpy(&tmpToken, _token, sizeof(struct token));
     tmpToken.pos = lexFilePosition();
@@ -84,6 +103,11 @@ struct token * readNextToken() {
             token = tokenMakeNumber();
             break;
 
+        // we dont care about whitespace, ignore them
+        case ' ':
+        case '\t':
+            token = handleWhitespace();
+
         case EOF:
             break;
 
@@ -93,6 +117,7 @@ struct token * readNextToken() {
 
     return token;
 }
+
 
 int lex(struct lexProcess * process) {
     process->currentExpressionCount = 0;
