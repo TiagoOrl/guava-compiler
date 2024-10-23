@@ -1,3 +1,1 @@
-int main() {
-    return 0;
-}
+"hello" 56514 "sadjh"

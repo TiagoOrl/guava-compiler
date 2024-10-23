@@ -6,6 +6,20 @@
 #include "helpers/vector.h"
 #include "helpers/buffer.h"
 
+
+#define NUMERIC_CASE \
+    case '0': \
+    case '1': \
+    case '2': \
+    case '3': \
+    case '4': \
+    case '5': \
+    case '6': \
+    case '7': \
+    case '8': \
+    case '9' 
+
+
 enum
 {
     LEXICAL_ANALYSIS_ALL_OK,
@@ -41,7 +55,7 @@ struct token
 {
     int type;
     int flags;
-
+    struct pos pos;
 
     // to store the value of the token
     union
@@ -50,7 +64,7 @@ struct token
         const char * sval;
         unsigned int inum;
         unsigned long lnum;
-        unsigned long long ll;
+        unsigned long long llnum;
         void * any;
     };
 
@@ -106,6 +120,8 @@ int compileFile(const char * filename, const char * out_filename, int flags);
 struct compileProcess * compileProcessCreate(const char * filename, const char * outFilename, int flags);
 
 
+void compilerError(struct compileProcess * compiler, const char * msg, ...);
+void compilerWarning(struct compileProcess * compiler, const char * msg, ...);
 char compileProcessNextChar(struct lexProcess * lexProcess);
 char compileProcessPeekChar(struct lexProcess * lexProcess);
 void compileProcessPushChar(struct lexProcess * lexProcess, char c);

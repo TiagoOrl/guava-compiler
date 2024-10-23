@@ -1,8 +1,15 @@
 OBJECTS= ./build/compiler.o ./build/cprocess.o ./build/lex_process.o ./build/lexer.o ./build/helpers/vector.o ./build/helpers/buffer.o
 
 
+
+
+
+
 all: ${OBJECTS}
 	gcc main.c ${INCLUDES} ${OBJECTS} -g -o ./main
+
+
+	
 
 ./build/compiler.o: ./compiler.c
 	gcc ./compiler.c ${INCLUDES} -o ./build/compiler.o -g -c
