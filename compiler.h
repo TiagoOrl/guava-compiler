@@ -3,9 +3,13 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include "helpers/vector.h"
 #include "helpers/buffer.h"
 
+
+#define S_EQ(str, str2) \
+        (str && str2 && (strcmp(str, str2) == 0))
 
 #define NUMERIC_CASE \
     case '0': \
@@ -18,6 +22,28 @@
     case '7': \
     case '8': \
     case '9' 
+
+
+#define OPERATOR_CASE_EXCLUDING_DIVISION \
+    case '+':                           \
+    case '-':                           \
+    case '*':                           \
+    case '>':                           \
+    case '<':                           \
+    case '^':                           \
+    case '%':                           \
+    case '!':                           \
+    case '=':                           \
+    case '~':                           \
+    case '|':                           \
+    case '&':                           \
+    case '(':                           \
+    case '[':                           \
+    case ',':                           \
+    case '.':                           \
+    case '?'                         
+
+
 
 
 enum
@@ -125,6 +151,7 @@ void compilerWarning(struct compileProcess * compiler, const char * msg, ...);
 char compileProcessNextChar(struct lexProcess * lexProcess);
 char compileProcessPeekChar(struct lexProcess * lexProcess);
 void compileProcessPushChar(struct lexProcess * lexProcess, char c);
+bool tokenIsKeyword(struct token * token, const char * value);
 
 
 
