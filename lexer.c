@@ -122,6 +122,167 @@ static struct token * tokenMakeString(char startDelim, char endDelim) {
 }
 
 
+static bool opTreatedAsOne(char op) {
+    return 
+        op == '(' || 
+        op == '[' || 
+        op == ',' || 
+        op == '.' || 
+        op == '*' ||
+        op == '?';
+}
+
+
+static bool isSingleOperator(char op) {
+    return 
+        op == '+' ||
+        op == '-' ||
+        op == '/' ||
+        op == '*' ||
+        op == '=' ||
+        op == '>' ||
+        op == '<' ||
+        op == '|' ||
+        op == '&' ||
+        op == '^' ||
+        op == '%' ||
+        op == '~' ||
+        op == '!' ||
+        op == '(' ||
+        op == '[' ||
+        op == ',' ||
+        op == '.' ||
+        op == '?';
+
+}
+
+
+bool opValid(const char * op) {
+    return 
+        S_EQ(op, "+") ||
+        S_EQ(op, "-") ||
+        S_EQ(op, "*") ||
+        S_EQ(op, "/") ||
+        S_EQ(op, "!") ||
+        S_EQ(op, "^") ||
+        S_EQ(op, "+=") ||
+        S_EQ(op, "-=") ||
+        S_EQ(op, "*=") ||
+        S_EQ(op, "/=") ||
+        S_EQ(op, ">>") ||
+        S_EQ(op, "<<") ||
+        S_EQ(op, ">=") ||
+        S_EQ(op, "<=") ||
+        S_EQ(op, ">") ||
+        S_EQ(op, "<") ||
+        S_EQ(op, "||") ||
+        S_EQ(op, "&&") ||
+        S_EQ(op, "|") ||
+        S_EQ(op, "&") ||
+        S_EQ(op, "++") ||
+        S_EQ(op, "--") ||
+        S_EQ(op, "=") ||
+        S_EQ(op, "!=") ||
+        S_EQ(op, "==") ||
+        S_EQ(op, "->") ||
+        S_EQ(op, "-") ||
+        S_EQ(op, "(") ||
+        S_EQ(op, "[") ||
+        S_EQ(op, ",") ||
+        S_EQ(op, ".") ||
+        S_EQ(op, "...") ||
+        S_EQ(op, "~") ||
+        S_EQ(op, "?") ||
+        S_EQ(op, "%");
+
+}
+
+void readOpFlushBackButKeepFirst(struct buffer * buffer) {
+    const char * data = buffer_ptr(buffer);
+    int len = buffer->len;
+
+    for (int i = len - 1; i >= 1; i--) {
+        if (data[i] == 0x00)
+            continue;
+
+        pushc(data[i]);
+    }
+}
+
+
+const char * readOp() {
+    bool singleOperator = true;
+    char op = nextc();
+
+    struct buffer * buffer = buffer_create();
+    buffer_write(buffer, op);
+
+    // if op is like ++ -- += -=...
+    if (!opTreatedAsOne(op)) {
+        op = peekc();
+
+        if (isSingleOperator(op)) {
+            buffer_write(buffer, op);
+            nextc();
+            singleOperator = false;
+        }
+    }
+    // write null terminator
+    buffer_write(buffer, 0x00);
+    char * ptr = buffer_ptr(buffer);
+
+    if (!singleOperator) {
+        if (!opValid(ptr)) {
+            readOpFlushBackButKeepFirst(buffer);
+            ptr[1] = 0x00;
+        }
+
+    } else if(!opValid(ptr)) {
+        compilerError(lexProcess->compiler, "The operator %s is not valid", ptr);
+    }
+
+    return ptr;
+}
+
+bool lexIsInExpression() {
+    return lexProcess->currentExpressionCount > 0;
+}
+
+
+static void lexNewExpression() {
+    lexProcess->currentExpressionCount++;
+
+    if (lexProcess->currentExpressionCount == 1)
+        lexProcess->parenthesesBuffer = buffer_create();
+    
+}
+
+
+
+static struct token * tokenMakeOperatorOrString() {
+    char op = peekc();
+    if (op == '<') {
+        struct token * lastToken = lexerLastToken();
+
+        if (tokenIsKeyword(lastToken, "include")) {
+            return tokenMakeString('<', '>');
+        }
+    }
+
+    struct token * token = tokenCreate(
+        &(struct token){
+            .type = TOKEN_TYPE_OPERATOR,
+            .sval = readOp()
+        });
+
+    if (op == '(') {
+        lexNewExpression();
+    }
+
+    return token;
+}
+
+
 struct token * readNextToken() {
     struct token * token = NULL;
 
@@ -131,6 +292,10 @@ struct token * readNextToken() {
     {
         NUMERIC_CASE:
             token = tokenMakeNumber();
+            break;
+
+        OPERATOR_CASE_EXCLUDING_DIVISION:
+            token = tokenMakeOperatorOrString();
             break;
 
         case '"':
