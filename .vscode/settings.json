@@ -3,6 +3,8 @@
         "stdbool.h": "c",
         "compiler.h": "c",
         "vector.h": "c",
-        "stdarg.h": "c"
+        "stdarg.h": "c",
+        "random": "c",
+        "queue": "c"
     }
 }

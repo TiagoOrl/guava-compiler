@@ -1,13 +1,16 @@
 #include "compiler.h"
-#include <string.h>
 #include "helpers/vector.h"
 #include "helpers/buffer.h"
+
+#include <string.h>
+#include <assert.h>
+
 
 #define LEX_GETC_IF(buffer, c, exp)     \
     for (c = peekc(); exp; c = peekc()) \
     {                                   \
         buffer_write(buffer, c);        \
-        nextc();                        \ 
+        nextc();                        \
     }                                   
 
 static struct lexProcess * lexProcess;
@@ -92,6 +95,33 @@ struct token * tokenMakeNumber() {
     return tokenMakeNumberForValue(readNumber());
 }
 
+
+static struct token * tokenMakeString(char startDelim, char endDelim) {
+    struct buffer * buf = buffer_create();
+
+    assert(nextc() == startDelim);
+
+    char c = nextc();
+
+    for (; c != endDelim && c != EOF; c = nextc()) {
+        if (c == '\\')
+        {
+            // we need to handle an escape character
+            continue;
+        }
+
+        buffer_write(buf, c);
+    }
+
+    buffer_write(buf, 0x00);
+
+    return tokenCreate(&(struct token){
+        .type = TOKEN_TYPE_STRING, 
+        .sval = buffer_ptr(buf)
+        });
+}
+
+
 struct token * readNextToken() {
     struct token * token = NULL;
 
@@ -102,6 +132,9 @@ struct token * readNextToken() {
         NUMERIC_CASE:
             token = tokenMakeNumber();
             break;
+
+        case '"':
+            token = tokenMakeString('"', '"');
 
         // we dont care about whitespace, ignore them
         case ' ':
