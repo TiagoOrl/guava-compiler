@@ -88,6 +88,13 @@ struct token * tokenCreate(struct token * _token) {
     return &tmpToken;
 }
 
+struct token * tokenMakeNewline() {
+    nextc();
+    return tokenCreate(&(struct token) {
+        .type = TOKEN_TYPE_NEWLINE
+    });
+}
+
 struct token * tokenMakeNumberForValue(unsigned long number) {
     return tokenCreate(&(struct token){.type=TOKEN_TYPE_NUMBER,.llnum=number});
 }
@@ -413,6 +420,10 @@ struct token * readNextToken() {
         case ' ':
         case '\t':
             token = handleWhitespace();
+
+        case '\n':
+        token = tokenMakeNewline();
+            break;
 
         case EOF:
             break;
