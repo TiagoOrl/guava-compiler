@@ -1,6 +1,7 @@
 #include "compiler.h"
 #include "helpers/vector.h"
 #include "helpers/buffer.h"
+#include <ctype.h>
 
 #include <string.h>
 #include <assert.h>
@@ -16,6 +17,7 @@
 static struct lexProcess * lexProcess;
 static struct token tmpToken;
 struct token * readNextToken();
+
 
 
 static char peekc() {
@@ -310,6 +312,38 @@ static struct token * tokenMakeSymbol() {
 }
 
 
+static struct token * tokenMakeIdentifierOrKeyword() {
+    struct buffer * buffer = buffer_create();
+    char c = 0;
+
+    LEX_GETC_IF(buffer, c, 
+        (c >= 'a' && c <= 'z') || 
+        (c >= 'A' && c <= 'Z') ||
+        (c >= '0' && c <= '9') ||
+        (c == '_')
+    );
+
+    buffer_write(buffer, 0x00);
+
+    // check if its a keyword
+
+    return tokenCreate(&(struct token) {
+        .type = TOKEN_TYPE_IDENTIFIER,
+        .sval = buffer_ptr(buffer)
+    });
+}
+
+struct token * readSpecialToken() {
+    char c = peekc();
+
+    if (isalpha(c) || c == '_') {
+        return tokenMakeIdentifierOrKeyword();
+    }
+
+    return NULL;
+}
+
+
 struct token * readNextToken() {
     struct token * token = NULL;
 
@@ -341,7 +375,10 @@ struct token * readNextToken() {
             break;
 
         default:
-            compilerError(lexProcess->compiler, "Unexpected token");
+            token = readSpecialToken();
+            if (!token) 
+                compilerError(lexProcess->compiler, "Unexpected token");
+            
     }
 
     return token;
