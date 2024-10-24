@@ -249,6 +249,7 @@ bool lexIsInExpression() {
 }
 
 
+
 static void lexNewExpression() {
     lexProcess->currentExpressionCount++;
 
@@ -257,6 +258,16 @@ static void lexNewExpression() {
     
 }
 
+
+static void lexFinishExpression() {
+    lexProcess->currentExpressionCount--;
+
+    // had right bracket without a left one = ) 
+    // closing expression that doesnt exist
+    if(lexProcess->currentExpressionCount < 0) {
+        compilerError(lexProcess->compiler, "You closed an expression that you never opened\n");
+    }
+}
 
 
 static struct token * tokenMakeOperatorOrString() {
@@ -282,6 +293,22 @@ static struct token * tokenMakeOperatorOrString() {
     return token;
 }
 
+static struct token * tokenMakeSymbol() {
+    char c = nextc();
+
+    if (c == ')') {
+        lexFinishExpression();
+    }
+
+    struct token * token  = tokenCreate(
+        &(struct token) {
+            .type = TOKEN_TYPE_SYMBOL,
+            .cval = c
+        });
+
+    return token;
+}
+
 
 struct token * readNextToken() {
     struct token * token = NULL;
@@ -296,6 +323,10 @@ struct token * readNextToken() {
 
         OPERATOR_CASE_EXCLUDING_DIVISION:
             token = tokenMakeOperatorOrString();
+            break;
+
+        SYMBOL_CASE:
+            token = tokenMakeSymbol();
             break;
 
         case '"':
