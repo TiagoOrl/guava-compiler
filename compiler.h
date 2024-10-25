@@ -45,6 +45,18 @@
 
 
 
+#define SYMBOL_CASE \
+    case '{':       \
+    case '}':       \
+    case ':':       \
+    case ';':       \
+    case '#':       \
+    case '\\':      \
+    case ')':       \
+    case ']'
+
+
+
 
 enum
 {
@@ -60,7 +72,7 @@ enum
 
 enum
 {
-    TOKEN_TYPE_ID,
+    TOKEN_TYPE_IDENTIFIER,
     TOKEN_TYPE_KEYWORD,
     TOKEN_TYPE_OPERATOR,
     TOKEN_TYPE_SYMBOL,
