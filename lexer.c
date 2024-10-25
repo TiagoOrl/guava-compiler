@@ -339,6 +339,75 @@ static struct token * tokenMakeOperatorOrString() {
     return token;
 }
 
+
+struct token * tokenMakeOnelineComment() {
+    struct buffer * buffer = buffer_create();
+    char c = 0;
+
+    LEX_GETC_IF(buffer, c, c != '\n' && c != EOF);
+
+    return tokenCreate(&(struct token){
+        .type = TOKEN_TYPE_COMMENT,
+        .sval = buffer_ptr(buffer)
+    });
+
+    while(1) {
+        LEX_GETC_IF(buffer, c, c != '*' && c != EOF);
+
+        if (c == EOF) {
+            compilerError(lexProcess->compiler, "You did not close this multiline comment\n");
+        }
+
+        else if (c == '*') {
+            // skip the * 
+            nextc();
+
+            if (peekc() == '/') {
+                nextc();
+                break;
+            }
+        }
+    }
+
+    return tokenCreate(&(struct token) {
+        .type = TOKEN_TYPE_COMMENT,
+        .sval = buffer_ptr(buffer)
+    });
+}
+
+
+
+struct token * tokenMakeMultilineComment() {
+    struct buffer * buffer = buffer_create();
+    char c = 0;
+}
+
+
+struct token * handleComment() {
+    char c = peekc();
+
+    if (c == '/') {
+        nextc();
+
+        if (peekc() == '/') {
+            nextc();
+            return tokenMakeOnelineComment();
+        }
+
+        else if (peekc() == '*') {
+            nextc();
+            return tokenMakeMultilineComment();
+        }
+
+        pushc('/');
+        return tokenMakeOperatorOrString();
+    }
+
+    return NULL;
+}
+
+
+
 static struct token * tokenMakeSymbol() {
     char c = nextc();
 
@@ -398,6 +467,11 @@ struct token * readNextToken() {
     struct token * token = NULL;
 
     char c = peekc();
+
+    token = handleComment();
+
+    if (token) 
+        return token;
 
     switch(c) 
     {
