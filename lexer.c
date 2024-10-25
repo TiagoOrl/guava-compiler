@@ -41,6 +41,15 @@ static void pushc(char c) {
     lexProcess->function->pushChar(lexProcess, c);
 }
 
+
+static char assertNextChar(char c) {
+    char nextC = nextc();
+
+    assert(c == nextC);
+    return nextC;
+}
+
+
 static struct pos lexFilePosition() {
     return lexProcess->pos;
 }
@@ -60,6 +69,30 @@ const char * readNumberStr() {
 unsigned long long readNumber() {
     const char * s = readNumberStr();
     return atoll(s);
+}
+
+char lexGetEscapedChar(char c) {
+    char co = 0;
+
+    switch (c) {
+        case 'n':
+            co = '\n';
+            break;
+
+        case '\\':
+            co = '\\';
+            break;
+
+        case 't':
+            co = '\t';
+            break;
+        
+        case '\'':
+            co = '\'';
+            break;
+    }
+
+    return co;
 }
 
 
@@ -463,6 +496,26 @@ struct token * readSpecialToken() {
 }
 
 
+struct token * tokenMakeQuote() {
+    assertNextChar('\'');
+    char c = nextc();
+    
+    if (c == '\\') {
+        c = nextc();
+        c = lexGetEscapedChar(c);
+    }
+
+    if (nextc() != '\'') {
+        compilerError(lexProcess->compiler, "You opened a quote but did not close it");
+    }
+
+    return tokenCreate(&(struct token) {
+        .type = TOKEN_TYPE_NUMBER,
+        .cval = c
+    });
+}
+
+
 struct token * readNextToken() {
     struct token * token = NULL;
 
@@ -489,11 +542,17 @@ struct token * readNextToken() {
 
         case '"':
             token = tokenMakeString('"', '"');
+            break;
+
+        case '\'':
+            token = tokenMakeQuote();
+            break;
 
         // we dont care about whitespace, ignore them
         case ' ':
         case '\t':
             token = handleWhitespace();
+            break;
 
         case '\n':
         token = tokenMakeNewline();
