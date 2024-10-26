@@ -175,6 +175,10 @@ struct lexProcess * lexProcessCreate(
 void lexProcessFree(struct lexProcess * process);
 void * lexProcessPrivate(struct lexProcess * process);
 struct vector * lexProcessTokens(struct lexProcess * process);
+struct lexProcess * tokensBuildForString(
+    struct compileProcess * compilerProc,
+    const char * str
+    );
 
 int lex(struct lexProcess * process);
 

@@ -688,3 +688,57 @@ int lex(struct lexProcess * process) {
 
     return LEXICAL_ANALYSIS_ALL_OK;
 }
+
+
+
+char lexerStringBufferNextChar(struct lexProcess * process) {
+    struct buffer * buffer = lexProcessPrivate(process);
+    return buffer_read(buffer);
+}
+
+
+char lexerStringBufferPeekChar(struct lexProcess * process) {
+    struct buffer * buffer = lexProcessPrivate(process);
+    return buffer_peek(buffer);
+}
+
+
+void lexerStringBufferPushChar(struct lexProcess * process, char c) {
+    struct buffer * buffer = lexProcessPrivate(process);
+    buffer_write(buffer, c);
+}
+
+
+struct lexProcessFunctions lexerStringBufferFunctions = {
+    .nextChar = lexerStringBufferNextChar,
+    .peekChar = lexerStringBufferPeekChar,
+    .pushChar = lexerStringBufferPushChar
+};
+
+
+/**
+ * 
+ * @brief Buils tokens for the input string.
+ * 
+ * @param compilerProc
+ * @param str
+ * @return lexProcess *
+ * 
+ */
+struct lexProcess * tokensBuildForString(
+    struct compileProcess * compilerProc,
+    const char * str
+    ) {
+        struct buffer * buffer = buffer_create();
+        buffer_printf(buffer, str);
+
+        struct lexProcess * lexProcess = lexProcessCreate(compilerProc, &lexerStringBufferFunctions, buffer);
+
+        if (!lexProcess)
+            return NULL;
+
+        if (lex(lexProcess) != LEXICAL_ANALYSIS_ALL_OK) 
+            return NULL;
+
+        return lexProcess;
+    }
