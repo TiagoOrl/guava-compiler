@@ -13,6 +13,7 @@ fsdf  floatsdfds floatsdfd fdsf dsf
 
 'e'
 
+0xDD245A
 
 int fsjdij;
 

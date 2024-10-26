@@ -495,6 +495,58 @@ struct token * readSpecialToken() {
     return NULL;
 }
 
+void lexerPopToken() {
+    vector_pop(lexProcess->tokenVector);
+}
+
+bool isHexChar(char c) {
+    c = tolower(c);
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+}
+
+
+const char * readHexNumberStr() {
+    struct buffer * buffer = buffer_create();
+
+    char c = peekc();
+    LEX_GETC_IF(buffer, c, isHexChar(c));
+
+    buffer_write(buffer, 0x00);
+
+    return buffer_ptr(buffer);
+}
+
+
+struct token * tokenMakeSpecialNumberHex() {
+    // skip the 'x'
+    nextc();
+
+    unsigned long number = 0;
+    const char *  numberString = readHexNumberStr();
+
+    number = strtol(numberString, 0, 16);
+
+    
+    return tokenMakeNumberForValue(number);
+}
+
+
+struct token * tokenMakeSpecialNumber() {
+    struct token * token = NULL;
+    struct token * lastToken = lexerLastToken();
+
+    lexerPopToken();
+
+    char c = peekc();
+
+    if (c == 'x') {
+        token = tokenMakeSpecialNumberHex();
+    }
+
+
+    return token;
+}
+
 
 struct token * tokenMakeQuote() {
     assertNextChar('\'');
@@ -538,6 +590,10 @@ struct token * readNextToken() {
 
         SYMBOL_CASE:
             token = tokenMakeSymbol();
+            break;
+
+        case 'x':
+            token = tokenMakeSpecialNumber();
             break;
 
         case '"':
