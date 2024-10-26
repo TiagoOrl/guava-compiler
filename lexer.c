@@ -17,6 +17,7 @@
 static struct lexProcess * lexProcess;
 static struct token tmpToken;
 struct token * readNextToken();
+bool lexIsInExpression();
 
 
 
@@ -26,6 +27,10 @@ static char peekc() {
 
 static char nextc() {
     char c = lexProcess->function->nextChar(lexProcess);
+
+    if (lexIsInExpression()) 
+        buffer_write(lexProcess->parenthesesBuffer, c);
+
     lexProcess->pos.col += 1;
 
     if (c == '\n') {
@@ -117,6 +122,11 @@ static struct token * handleWhitespace() {
 struct token * tokenCreate(struct token * _token) {
     memcpy(&tmpToken, _token, sizeof(struct token));
     tmpToken.pos = lexFilePosition();
+
+    if (lexIsInExpression()) {
+        tmpToken.between_brackets = buffer_ptr(lexProcess->parenthesesBuffer);
+    }
+
 
     return &tmpToken;
 }
