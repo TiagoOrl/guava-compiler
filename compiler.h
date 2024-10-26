@@ -162,6 +162,10 @@ struct compileProcess
         FILE *fp;
         const char * absPath;
     } cFile;
+
+    // vector of tokens from lexical analysis.
+    struct vector * tokenVec;
+
     FILE * oFile;
 };
 
