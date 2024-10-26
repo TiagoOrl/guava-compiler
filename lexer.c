@@ -531,17 +531,48 @@ struct token * tokenMakeSpecialNumberHex() {
 }
 
 
+void lexerValidateBinaryString(const char * str) {
+    size_t len = strlen(str);
+
+    for (int i = 0; i < len; i++) {
+        if (str[i] != '0' && str[i] != '1')
+        {
+            compilerError(lexProcess->compiler, "This is not a valid binary number");
+        }
+    }
+}
+
+
+struct token * tokenMakeSpecialNumberBinary() {
+    // skip the 'b'
+    nextc();
+
+    unsigned long number = 0;
+    const char * numberString = readNumberStr();
+    lexerValidateBinaryString(numberString);
+    number = strtol(numberString, 0, 2);
+
+    return tokenMakeNumberForValue(number);
+}
+
+
 struct token * tokenMakeSpecialNumber() {
     struct token * token = NULL;
     struct token * lastToken = lexerLastToken();
+
+    if (!lastToken || !(lastToken->type = TOKEN_TYPE_NUMBER && lastToken->llnum == 0))
+        return tokenMakeIdentifierOrKeyword();
+    
 
     lexerPopToken();
 
     char c = peekc();
 
-    if (c == 'x') {
+    if (c == 'x') 
         token = tokenMakeSpecialNumberHex();
-    }
+
+    else if (c == 'b') 
+        token = tokenMakeSpecialNumberBinary();
 
 
     return token;
@@ -590,6 +621,10 @@ struct token * readNextToken() {
 
         SYMBOL_CASE:
             token = tokenMakeSymbol();
+            break;
+
+        case 'b':
+            token = tokenMakeSpecialNumber();
             break;
 
         case 'x':
