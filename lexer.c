@@ -138,8 +138,31 @@ struct token * tokenMakeNewline() {
     });
 }
 
+
+int lexerNumberType(char c) {
+    int res = NUMBER_TYPE_NORMAL;
+
+    if (c == 'L')
+        res = NUMBER_TYPE_LONG;
+    else if (c == 'f')
+        res = NUMBER_TYPE_FLOAT;
+
+    return res;
+}
+
+
 struct token * tokenMakeNumberForValue(unsigned long number) {
-    return tokenCreate(&(struct token){.type=TOKEN_TYPE_NUMBER,.llnum=number});
+    int numberType = lexerNumberType(peekc());
+
+    if (numberType != NUMBER_TYPE_NORMAL)
+        nextc();
+    
+
+    return tokenCreate(&(struct token){
+        .type=TOKEN_TYPE_NUMBER,
+        .llnum=number,
+        .number.type = numberType
+        });
 }
 
 

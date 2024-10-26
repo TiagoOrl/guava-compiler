@@ -89,6 +89,13 @@ struct pos
     const char * filename;
 };
 
+enum {
+    NUMBER_TYPE_NORMAL,
+    NUMBER_TYPE_LONG,
+    NUMBER_TYPE_FLOAT,
+    NUMBER_TYPE_DOUBLE
+};
+
 struct token 
 {
     int type;
@@ -105,6 +112,10 @@ struct token
         unsigned long long llnum;
         void * any;
     };
+
+    struct tokenNUmber {
+        int type;
+    }number;
 
     // true if there is a whitespace between the token and the next token
     bool whitespace;
