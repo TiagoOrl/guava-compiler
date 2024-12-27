@@ -63,6 +63,8 @@ int compileFile(const char * filename, const char * outFilename, int flags) {
     //
 
     // preform parsing
+    if (parse(process) != PARSE_ALL_OK)
+        return COMPILER_FAILED_WITH_ERRORS;
     //
 
     // preform code generation

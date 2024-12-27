@@ -165,8 +165,15 @@ struct compileProcess
 
     // vector of tokens from lexical analysis.
     struct vector * tokenVec;
-
+    struct vector * nodeVec;
+    struct vector * nodeTreeVec;
     FILE * oFile;
+};
+
+enum
+{
+    PARSE_ALL_OK,
+    PARSE_GENERAL_ERROR
 };
 
 enum
@@ -259,6 +266,7 @@ struct lexProcess * tokensBuildForString(
     );
 
 int lex(struct lexProcess * process);
+int parse(struct compileProcess * process);
 
 
 #endif

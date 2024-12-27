@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "compiler.h"
+#include "helpers/vector.h"
 
 struct compileProcess * compileProcessCreate(const char * filename, const char * outFilename, int flags) {
     FILE * file  = fopen(filename, "r");
@@ -19,6 +20,9 @@ struct compileProcess * compileProcessCreate(const char * filename, const char *
     }
     
     struct compileProcess * process = calloc(1, sizeof(struct compileProcess));
+    process->nodeVec = vector_create(sizeof(struct node*));
+    process->nodeTreeVec = vector_create(sizeof(struct node*));
+    
     process->flags = flags;
     process->cFile.fp = file;
     process->oFile = outFile;
