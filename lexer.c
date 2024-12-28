@@ -17,6 +17,7 @@
 static struct lexProcess * lexProcess;
 static struct token tmpToken;
 struct token * readNextToken();
+bool lexIsInExpression();
 
 
 
@@ -26,6 +27,10 @@ static char peekc() {
 
 static char nextc() {
     char c = lexProcess->function->nextChar(lexProcess);
+
+    if (lexIsInExpression()) 
+        buffer_write(lexProcess->parenthesesBuffer, c);
+
     lexProcess->pos.col += 1;
 
     if (c == '\n') {
@@ -118,6 +123,11 @@ struct token * tokenCreate(struct token * _token) {
     memcpy(&tmpToken, _token, sizeof(struct token));
     tmpToken.pos = lexFilePosition();
 
+    if (lexIsInExpression()) {
+        tmpToken.between_brackets = buffer_ptr(lexProcess->parenthesesBuffer);
+    }
+
+
     return &tmpToken;
 }
 
@@ -128,8 +138,31 @@ struct token * tokenMakeNewline() {
     });
 }
 
+
+int lexerNumberType(char c) {
+    int res = NUMBER_TYPE_NORMAL;
+
+    if (c == 'L')
+        res = NUMBER_TYPE_LONG;
+    else if (c == 'f')
+        res = NUMBER_TYPE_FLOAT;
+
+    return res;
+}
+
+
 struct token * tokenMakeNumberForValue(unsigned long number) {
-    return tokenCreate(&(struct token){.type=TOKEN_TYPE_NUMBER,.llnum=number});
+    int numberType = lexerNumberType(peekc());
+
+    if (numberType != NUMBER_TYPE_NORMAL)
+        nextc();
+    
+
+    return tokenCreate(&(struct token){
+        .type=TOKEN_TYPE_NUMBER,
+        .llnum=number,
+        .number.type = numberType
+        });
 }
 
 
@@ -495,6 +528,89 @@ struct token * readSpecialToken() {
     return NULL;
 }
 
+void lexerPopToken() {
+    vector_pop(lexProcess->tokenVector);
+}
+
+bool isHexChar(char c) {
+    c = tolower(c);
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+}
+
+
+const char * readHexNumberStr() {
+    struct buffer * buffer = buffer_create();
+
+    char c = peekc();
+    LEX_GETC_IF(buffer, c, isHexChar(c));
+
+    buffer_write(buffer, 0x00);
+
+    return buffer_ptr(buffer);
+}
+
+
+struct token * tokenMakeSpecialNumberHex() {
+    // skip the 'x'
+    nextc();
+
+    unsigned long number = 0;
+    const char *  numberString = readHexNumberStr();
+
+    number = strtol(numberString, 0, 16);
+
+    
+    return tokenMakeNumberForValue(number);
+}
+
+
+void lexerValidateBinaryString(const char * str) {
+    size_t len = strlen(str);
+
+    for (int i = 0; i < len; i++) {
+        if (str[i] != '0' && str[i] != '1')
+        {
+            compilerError(lexProcess->compiler, "This is not a valid binary number");
+        }
+    }
+}
+
+
+struct token * tokenMakeSpecialNumberBinary() {
+    // skip the 'b'
+    nextc();
+
+    unsigned long number = 0;
+    const char * numberString = readNumberStr();
+    lexerValidateBinaryString(numberString);
+    number = strtol(numberString, 0, 2);
+
+    return tokenMakeNumberForValue(number);
+}
+
+
+struct token * tokenMakeSpecialNumber() {
+    struct token * token = NULL;
+    struct token * lastToken = lexerLastToken();
+
+    if (!lastToken || !(lastToken->type = TOKEN_TYPE_NUMBER && lastToken->llnum == 0))
+        return tokenMakeIdentifierOrKeyword();
+    
+
+    lexerPopToken();
+
+    char c = peekc();
+
+    if (c == 'x') 
+        token = tokenMakeSpecialNumberHex();
+
+    else if (c == 'b') 
+        token = tokenMakeSpecialNumberBinary();
+
+
+    return token;
+}
+
 
 struct token * tokenMakeQuote() {
     assertNextChar('\'');
@@ -538,6 +654,14 @@ struct token * readNextToken() {
 
         SYMBOL_CASE:
             token = tokenMakeSymbol();
+            break;
+
+        case 'b':
+            token = tokenMakeSpecialNumber();
+            break;
+
+        case 'x':
+            token = tokenMakeSpecialNumber();
             break;
 
         case '"':
@@ -587,3 +711,57 @@ int lex(struct lexProcess * process) {
 
     return LEXICAL_ANALYSIS_ALL_OK;
 }
+
+
+
+char lexerStringBufferNextChar(struct lexProcess * process) {
+    struct buffer * buffer = lexProcessPrivate(process);
+    return buffer_read(buffer);
+}
+
+
+char lexerStringBufferPeekChar(struct lexProcess * process) {
+    struct buffer * buffer = lexProcessPrivate(process);
+    return buffer_peek(buffer);
+}
+
+
+void lexerStringBufferPushChar(struct lexProcess * process, char c) {
+    struct buffer * buffer = lexProcessPrivate(process);
+    buffer_write(buffer, c);
+}
+
+
+struct lexProcessFunctions lexerStringBufferFunctions = {
+    .nextChar = lexerStringBufferNextChar,
+    .peekChar = lexerStringBufferPeekChar,
+    .pushChar = lexerStringBufferPushChar
+};
+
+
+/**
+ * 
+ * @brief Buils tokens for the input string.
+ * 
+ * @param compilerProc
+ * @param str
+ * @return lexProcess *
+ * 
+ */
+struct lexProcess * tokensBuildForString(
+    struct compileProcess * compilerProc,
+    const char * str
+    ) {
+        struct buffer * buffer = buffer_create();
+        buffer_printf(buffer, str);
+
+        struct lexProcess * lexProcess = lexProcessCreate(compilerProc, &lexerStringBufferFunctions, buffer);
+
+        if (!lexProcess)
+            return NULL;
+
+        if (lex(lexProcess) != LEXICAL_ANALYSIS_ALL_OK) 
+            return NULL;
+
+        return lexProcess;
+    }

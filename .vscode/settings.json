@@ -5,6 +5,8 @@
         "vector.h": "c",
         "stdarg.h": "c",
         "random": "c",
-        "queue": "c"
+        "queue": "c",
+        "cstring": "cpp",
+        "locale": "cpp"
     }
 }

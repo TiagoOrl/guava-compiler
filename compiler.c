@@ -58,9 +58,13 @@ int compileFile(const char * filename, const char * outFilename, int flags) {
         return COMPILER_FAILED_WITH_ERRORS;
     }
 
+    process->tokenVec = lexProcess->tokenVector;
+
     //
 
     // preform parsing
+    if (parse(process) != PARSE_ALL_OK)
+        return COMPILER_FAILED_WITH_ERRORS;
     //
 
     // preform code generation

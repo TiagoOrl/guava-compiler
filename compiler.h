@@ -89,6 +89,13 @@ struct pos
     const char * filename;
 };
 
+enum {
+    NUMBER_TYPE_NORMAL,
+    NUMBER_TYPE_LONG,
+    NUMBER_TYPE_FLOAT,
+    NUMBER_TYPE_DOUBLE
+};
+
 struct token 
 {
     int type;
@@ -105,6 +112,10 @@ struct token
         unsigned long long llnum;
         void * any;
     };
+
+    struct tokenNUmber {
+        int type;
+    }number;
 
     // true if there is a whitespace between the token and the next token
     bool whitespace;
@@ -151,8 +162,82 @@ struct compileProcess
         FILE *fp;
         const char * absPath;
     } cFile;
+
+    // vector of tokens from lexical analysis.
+    struct vector * tokenVec;
+    struct vector * nodeVec;
+    struct vector * nodeTreeVec;
     FILE * oFile;
 };
+
+enum
+{
+    PARSE_ALL_OK,
+    PARSE_GENERAL_ERROR
+};
+
+enum
+{
+    NODE_TYPE_EXPRESSION,
+    NODE_TYPE_EXPRESSION_PARENTHESES,
+    NODE_TYPE_NUMBER,
+    NODE_TYPE_IDENTIFIER,
+    NODE_TYPE_STRING,
+    NODE_TYPE_VARIABLE,
+    NODE_TYPE_VARIABLE_LIST,
+    NODE_TYPE_FUNCTION,
+    NODE_TYPE_BODY,
+    NODE_TYPE_STATEMENT_RETURN,
+    NODE_TYPE_STATEMENT_IF,
+    NODE_TYPE_STATEMENT_ELSE,
+    NODE_TYPE_STATEMENT_WHILE,
+    NODE_TYPE_STATEMENT_DO_WHILE,
+    NODE_TYPE_STATEMENT_FOR,
+    NODE_TYPE_STATEMENT_BREAK,
+    NODE_TYPE_STATEMENT_CCONTINUE,
+    NODE_TYPE_STATEMENT_SWITCH,
+    NODE_TYPE_STATEMENT_CASE,
+    NODE_TYPE_STATEMENT_DEFAULT,
+    NODE_TYPE_STATEMENT_GOTO,
+
+    NODE_TYPE_UNARY,
+    NODE_TYPE_TERNARY,
+    NODE_TYPE_LABEL,
+    NODE_TYPE_STRUCT,
+    NODE_TYPE_UNION,
+    NODE_TYPE_BRACKET,
+    NODE_TYPE_CAST,
+    NODE_TYPE_BLANK
+};
+
+
+struct node 
+{
+    int type;
+    int flags;
+
+
+    struct pos pos;
+
+    struct nodeBinded
+    {
+        // pointer to body node
+        struct node* owner;
+
+        // pointer to the function this node is in
+        struct node* function;
+    } binded;
+
+    union 
+    {
+        char cval;
+        const char * sval;
+        unsigned int inum;
+        unsigned long lnum;
+        unsigned long long llnum;
+    };
+};
+
 
 int compileFile(const char * filename, const char * out_filename, int flags);
 struct compileProcess * compileProcessCreate(const char * filename, const char * outFilename, int flags);
@@ -175,8 +260,13 @@ struct lexProcess * lexProcessCreate(
 void lexProcessFree(struct lexProcess * process);
 void * lexProcessPrivate(struct lexProcess * process);
 struct vector * lexProcessTokens(struct lexProcess * process);
+struct lexProcess * tokensBuildForString(
+    struct compileProcess * compilerProc,
+    const char * str
+    );
 
 int lex(struct lexProcess * process);
+int parse(struct compileProcess * process);
 
 
 #endif
