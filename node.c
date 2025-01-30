@@ -40,3 +40,12 @@ struct node* nodePop() {
 
     return lastNode;
 }
+
+struct node* nodeCreate(struct node* _node) {
+    struct node* node = malloc(sizeof(struct node));
+    memcpy(node, _node, sizeof(struct node));
+
+    #warning "we should set the binded owner and the binded funciton here"
+    nodePush(node);
+    return node;
+}

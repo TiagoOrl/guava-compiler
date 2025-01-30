@@ -248,9 +248,18 @@ void compilerWarning(struct compileProcess * compiler, const char * msg, ...);
 char compileProcessNextChar(struct lexProcess * lexProcess);
 char compileProcessPeekChar(struct lexProcess * lexProcess);
 void compileProcessPushChar(struct lexProcess * lexProcess, char c);
+
+
 bool tokenIsKeyword(struct token * token, const char * value);
+bool tokenIsSymbol(struct token* token, char c);
+bool tokenIsNlOrCommentOrNewlineSeparator(struct token* token);
 
-
+struct node* nodeCreate(struct node* _node);
+struct node* nodePop();
+struct node* nodePeek();
+struct node* nodePeekOrNull();
+void nodePush(struct node* node);
+void nodeSetVector(struct vector* vec, struct vector* rootVec);
 
 struct lexProcess * lexProcessCreate(
     struct compileProcess * compiler, 
