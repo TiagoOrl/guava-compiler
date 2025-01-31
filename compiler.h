@@ -211,6 +211,11 @@ enum
 };
 
 
+enum {
+    NODE_FLAG_INSIDE_EXPRESSION = 0b000000001
+};
+
+
 struct node 
 {
     int type;
@@ -227,6 +232,15 @@ struct node
         // pointer to the function this node is in
         struct node* function;
     } binded;
+
+    union 
+    {
+        struct exp {
+            struct node* left;
+            struct node*right;
+            const char* op;
+        } exp;
+    };
 
     union 
     {
@@ -248,8 +262,20 @@ void compilerWarning(struct compileProcess * compiler, const char * msg, ...);
 char compileProcessNextChar(struct lexProcess * lexProcess);
 char compileProcessPeekChar(struct lexProcess * lexProcess);
 void compileProcessPushChar(struct lexProcess * lexProcess, char c);
-bool tokenIsKeyword(struct token * token, const char * value);
 
+
+bool tokenIsKeyword(struct token * token, const char * value);
+bool tokenIsSymbol(struct token* token, char c);
+bool tokenIsNlOrCommentOrNewlineSeparator(struct token* token);
+
+struct node* nodeCreate(struct node* _node);
+struct node* nodePop();
+struct node* nodePeek();
+struct node* nodePeekOrNull();
+void nodePush(struct node* node);
+void nodeSetVector(struct vector* vec, struct vector* rootVec);
+bool nodeIsExpressionable(struct node* node);
+struct node* nodePeekExpressionableOrNull();
 
 
 struct lexProcess * lexProcessCreate(
@@ -267,6 +293,8 @@ struct lexProcess * tokensBuildForString(
 
 int lex(struct lexProcess * process);
 int parse(struct compileProcess * process);
+
+void makeExpNode(struct node* leftNode, struct node* rightNode, const char* op);
 
 
 #endif
