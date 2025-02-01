@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "compiler.h"
 #include "helpers/vector.h"
 
@@ -8,6 +9,8 @@
 struct history {
     int flags;
 };
+
+extern struct expressionableOpPrecedenceGroup opPrecedence[TOTAL_OPERATOR_GROUPS];
 
 int parseExpressionalbleSingle(struct history* history);
 void parseExpressionable(struct history* history);
@@ -95,6 +98,87 @@ void parseExpressionableForOp(struct history* history, const char * op) {
 }
 
 
+static int parserGetPrecedenceForOperator(const char* op, struct expressionableOpPrecedenceGroup** groupOut) {
+    *groupOut = NULL;
+    for (int i = 0; i < TOTAL_OPERATOR_GROUPS; i++) {
+        for (int b = 0; opPrecedence[i].operators[b]; b++) {
+            const char* _op = opPrecedence[i].operators[b];
+            if (S_EQ(op, _op))
+            {
+                *groupOut = &opPrecedence[i];
+                return i;
+            }
+        }
+    }
+
+    return -1;
+}
+
+
+static bool parserLeftOpHasPriority(const char* opLeft, const char* opRight) {
+    struct expressionableOpPrecedenceGroup *groupLeft = NULL;
+    struct expressionableOpPrecedenceGroup *groupRight = NULL;
+
+    if (S_EQ(opLeft, opRight))
+    {
+        return false;
+    }
+
+    int precedenceLeft = parserGetPrecedenceForOperator(opLeft, &groupLeft);
+    int precedenceRight = parserGetPrecedenceForOperator(opRight, &groupRight);
+
+    if (groupLeft->associativity == ASSOCIATIVITY_RIGHT_TO_LEFT)
+        return false;
+
+    return precedenceLeft <= precedenceRight;
+}
+
+
+void parserNodeShiftChildrenLeft(struct node* node) {
+    assert(node->type == NODE_TYPE_EXPRESSION);
+    assert(node->exp.right->type == NODE_TYPE_EXPRESSION);
+
+    const char* rightOp = node->exp.right->exp.op;
+    struct node* newExpLeftNode = node->exp.left;
+    struct node* newExpRightNode = node->exp.right->exp.left;
+
+    makeExpNode(newExpLeftNode, newExpRightNode, node->exp.op);
+
+    struct node* newLeftOperand = nodePop();
+    struct node* newRightOperand = node->exp.right->exp.right;
+
+    node->exp.left = newLeftOperand;
+    node->exp.right = newRightOperand;
+    node->exp.op = rightOp;
+}
+
+
+void parserReorderExpression(struct node** nodeOut) {
+    struct node* node = *nodeOut;
+
+    if (node->type != NODE_TYPE_EXPRESSION)
+        return;
+
+    // no expressions, nothing to do
+    if (node->exp.left->type != NODE_TYPE_EXPRESSION && node->exp.right && 
+        node->exp.right->type != NODE_TYPE_EXPRESSION)
+        return;
+
+
+    if (node->exp.left->type != NODE_TYPE_EXPRESSION && node->exp.right &&
+        node->exp.right->type ==  NODE_TYPE_EXPRESSION) {
+            const char* rightOp = node->exp.right->exp.op;
+
+            if(parserLeftOpHasPriority(node->exp.op, rightOp)) {
+                parserNodeShiftChildrenLeft(node);
+                parserReorderExpression(&node->exp.left);
+                parserReorderExpression(&node->exp.right);
+            }
+        }
+        
+}
+
+
 void parseExpNormal(struct history* history) {
     struct token* opToken = tokenPeekNext();
     const char * op = opToken->sval;
@@ -123,6 +207,7 @@ void parseExpNormal(struct history* history) {
 
 
     // reorder the expression
+    parserReorderExpression(&nodeExp);
     nodePush(nodeExp);
 }
 

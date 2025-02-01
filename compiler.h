@@ -297,4 +297,21 @@ int parse(struct compileProcess * process);
 void makeExpNode(struct node* leftNode, struct node* rightNode, const char* op);
 
 
+#define TOTAL_OPERATOR_GROUPS 14
+#define MAX_OPERATORS_IN_GROUP 12
+
+
+enum
+{
+    ASSOCIATIVITY_LEFT_TO_RIGHT,
+    ASSOCIATIVITY_RIGHT_TO_LEFT
+};
+
+
+struct expressionableOpPrecedenceGroup
+{
+    char* operators[MAX_OPERATORS_IN_GROUP];
+    int associativity;
+};
+
 #endif
