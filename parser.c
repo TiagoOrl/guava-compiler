@@ -218,6 +218,12 @@ int parseExp(struct history* history) {
 }
 
 
+void parseIdentifier(struct history* history) {
+    assert(tokenPeekNext()->type == NODE_TYPE_IDENTIFIER);
+    parseSingleTokenToNode();
+}
+
+
 int parseExpressionalbleSingle(struct history* history) {
     struct token* token = tokenPeekNext();
     if (!token)
@@ -231,6 +237,11 @@ int parseExpressionalbleSingle(struct history* history) {
             parseSingleTokenToNode();
             res = 0;
         break;
+
+        case TOKEN_TYPE_IDENTIFIER:
+            parseIdentifier(history);
+        break;
+
 
         case TOKEN_TYPE_OPERATOR:
             parseExp(history);
