@@ -7,6 +7,7 @@
         "random": "c",
         "queue": "c",
         "cstring": "cpp",
-        "locale": "cpp"
+        "locale": "cpp",
+        "stdio.h": "c"
     }
 }

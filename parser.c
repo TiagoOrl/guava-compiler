@@ -61,6 +61,12 @@ static struct token* tokenPeekNext() {
 }
 
 
+static bool tokenNextIsOperator(const char* op) {
+    struct token* token = tokenPeekNext();
+    return tokenIsOperator(token, op);
+}
+
+
 void parseSingleTokenToNode() {
     struct token* token = tokenNext();
     struct node* node = NULL;
@@ -224,6 +230,184 @@ void parseIdentifier(struct history* history) {
 }
 
 
+static bool isKeywordVariableModifier(const char* val) {
+    return 
+        S_EQ(val, "unsigned") ||
+        S_EQ(val, "signed") ||
+        S_EQ(val, "static") ||
+        S_EQ(val, "const") ||
+        S_EQ(val, "extern") ||
+        S_EQ(val, "__ignore_typecheck__");
+
+}
+
+
+void parseDatatypeModifiers(struct datatype * dtype){
+    struct token* token = tokenPeekNext();
+
+    while(token && token->type == TOKEN_TYPE_KEYWORD) {
+        if (!isKeywordVariableModifier(token->sval))
+            break;
+
+        if (S_EQ(token->sval, "signed"))
+            dtype->flags |= DATATYPE_FLAG_IS_SIGNED;
+
+        else if(S_EQ(token->sval, "unsigned"))
+            dtype->flags |= ~DATATYPE_FLAG_IS_SIGNED;
+
+        else if(S_EQ(token->sval, "static"))
+            dtype->flags |= DATATYPE_FLAG_IS_STATIC;
+
+        else if(S_EQ(token->sval, "const"))
+            dtype->flags |= DATATYPE_FLAG_IS_CONST;
+
+        else if(S_EQ(token->sval, "extern"))
+            dtype->flags |= DATATYPE_FLAG_IS_EXTERN;
+
+        else if(S_EQ(token->sval, "__ignore_typecheck__"))
+            dtype->flags |= DATATYPE_FLAG_IGNORE_TYPE_CHECKING;
+
+        tokenNext();
+        token = tokenPeekNext();
+    }
+}
+
+
+void parserGetDatatypeTokens(struct token** datatypeToken, struct token** datatypeSecondaryToken) {
+    *datatypeToken = tokenNext();
+    struct token* nextToken = tokenPeekNext();
+
+    if(tokenIsPrimitiveKeyword(nextToken)) {
+        *datatypeSecondaryToken = nextToken;
+        tokenNext();
+    }
+}
+
+
+int parserDatatypeExpectedForTypeString(const char* str) {
+    int type = DATATYPE_EXPECT_PRIMITIVE;
+
+    if (S_EQ(str, "union")) 
+        type = DATATYPE_EXPECT_UNION;
+
+    else if(S_EQ(str, "struct"))
+        type = DATATYPE_EXPECT_STRUCT;
+
+
+
+    return type;
+}
+
+
+int parserGetRandomTypeIndex() {
+    static int x = 0;
+    x++;
+    return x;
+}
+
+
+struct token* parserBuildRandomTypename() {
+    char tmpName[25];
+    sprintf(tmpName, "customtypename_%i", parserGetRandomTypeIndex());
+
+    char* sval = malloc(sizeof(tmpName));
+    strncpy(sval, tmpName, sizeof(tmpName));
+
+    struct token* token = calloc(1, sizeof(struct token));
+    token->type = TOKEN_TYPE_IDENTIFIER;
+    token->sval = sval;
+
+    return token;
+}
+
+
+int parserGetPointerDepth() {
+    int depth = 0;
+
+    while(tokenNextIsOperator("*")) {
+        depth++;
+        tokenNext();
+    }
+
+    return depth;
+}
+
+
+void parserDatatypeInitTypeAndSize(
+    struct token* datatypeToken, 
+    struct token* ddatatypeSecondaryToken,
+    struct datatype* datatypeOut,
+    int pointerDepth,
+    int expectedType
+) {
+    
+}
+
+
+void parserDatatypeInit(
+    struct token* datatypeToken, 
+    struct token* datatypeSecondaryToken,
+    struct datatype* datatypeOut,
+    int pointerDepth,
+    int expectedType
+) {
+
+}
+
+
+void parseDatatypeType(struct datatype* dtype) {
+    struct token* datatypeToken = NULL;
+    struct token* datatypeSecondaryToken = NULL;
+
+    parserGetDatatypeTokens(&datatypeToken, &datatypeSecondaryToken);
+
+    int expectedType = parserDatatypeExpectedForTypeString(datatypeToken->sval);
+
+    if (datatypeIsStructOrUNionForName(datatypeToken->sval)) {
+        if (tokenPeekNext()->type == TOKEN_TYPE_IDENTIFIER) {
+            datatypeToken = tokenNext();
+
+        } else {
+            // this struct has no name
+            datatypeToken = parserBuildRandomTypename();
+            dtype->flags |= DATATYPE_FLAG_STRUCT_UNION_NO_NAME;
+        }
+    }
+
+    int pointerDepth = parserGetPointerDepth();
+}
+
+
+void parseDatatype(struct datatype *dtype) {
+    memset(dtype, 0, sizeof(struct datatype));
+
+    // all varaibles by default are signed by default
+    dtype->flags |= DATATYPE_FLAG_IS_SIGNED;
+
+    parseDatatypeModifiers(dtype);
+    parseDatatypeType(dtype);
+    parseDatatypeModifiers(dtype);
+}
+
+
+void parseVariableFunctionOrStructUnion(struct history* history) {
+    struct datatype dtype;
+    parseDatatype(&dtype);
+}
+
+
+void parseKeyword(struct history* history) {
+    struct token* token = tokenPeekNext();
+
+    if(isKeywordVariableModifier(token->sval) ||keywordIsDatatype(token->sval)) {
+        parseVariableFunctionOrStructUnion(history);
+        return;
+    }
+
+
+}
+
+
 int parseExpressionalbleSingle(struct history* history) {
     struct token* token = tokenPeekNext();
     if (!token)
@@ -241,6 +425,12 @@ int parseExpressionalbleSingle(struct history* history) {
         case TOKEN_TYPE_IDENTIFIER:
             parseIdentifier(history);
         break;
+
+
+        case TOKEN_TYPE_KEYWORD:
+            parseKeyword(history);
+            res = 0;
+            break;
 
 
         case TOKEN_TYPE_OPERATOR:

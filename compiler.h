@@ -253,6 +253,67 @@ struct node
 };
 
 
+enum
+{
+    DATATYPE_FLAG_IS_SIGNED = 0b00000001,
+    DATATYPE_FLAG_IS_STATIC = 0b00000010,
+    DATATYPE_FLAG_IS_CONST = 0b00000100,
+    DATATYPE_FLAG_IS_POINTER = 0b00001000,
+    DATATYPE_FLAG_IS_ARRAY = 0b00010000,
+    DATATYPE_FLAG_IS_EXTERN = 0b00100000,
+    DATATYPE_FLAG_IS_RESTRICT = 0b01000000,
+    DATATYPE_FLAG_IGNORE_TYPE_CHECKING = 0b10000000,
+    DATATYPE_FLAG_IS_SECONDARY = 0b100000000,
+    DATATYPE_FLAG_STRUCT_UNION_NO_NAME = 0b1000000000,
+    DATATYPE_FLAG_IS_LITERAL = 0b10000000000,
+};
+
+
+enum
+{
+    DATATYPE_VOID,
+    DATATYPE_CHAR,
+    DATATYPE_SHORT,
+    DATATYPE_INTEGER,
+    DATATYPE_LONG,
+    DATATYPE_FLOAT,
+    DATATYPE_DOUBLE,
+    DATATYPE_STRUCT,
+    DATATYPE_UNION,
+    DATATYPE_UNKNOWN
+};
+
+
+struct datatype
+{
+    int flags;
+    // i. e. type of long, int, float, ect...
+    int type;
+    // long long, long int...
+    struct datatype* secondary;
+    // long
+    const char typeStr;
+    //size of the datatype
+    size_t size;
+
+    int pointerDepth;
+
+    union 
+    {
+        struct node* structNode;
+        struct node* unionNode;
+    };
+};
+
+
+enum
+{
+    DATATYPE_EXPECT_PRIMITIVE,
+    DATATYPE_EXPECT_UNION,
+    DATATYPE_EXPECT_STRUCT
+};
+
+
 int compileFile(const char * filename, const char * out_filename, int flags);
 struct compileProcess * compileProcessCreate(const char * filename, const char * outFilename, int flags);
 
@@ -264,9 +325,13 @@ char compileProcessPeekChar(struct lexProcess * lexProcess);
 void compileProcessPushChar(struct lexProcess * lexProcess, char c);
 
 
+bool datatypeIsStructOrUNionForName(const char* name);
+
+bool tokenIsPrimitiveKeyword(struct token* token);
 bool tokenIsKeyword(struct token * token, const char * value);
 bool tokenIsSymbol(struct token* token, char c);
 bool tokenIsNlOrCommentOrNewlineSeparator(struct token* token);
+bool tokenIsOperator(struct token* token, const char* val);
 
 struct node* nodeCreate(struct node* _node);
 struct node* nodePop();
@@ -278,6 +343,7 @@ bool nodeIsExpressionable(struct node* node);
 struct node* nodePeekExpressionableOrNull();
 
 
+bool keywordIsDatatype(const char * str);
 struct lexProcess * lexProcessCreate(
     struct compileProcess * compiler, 
     struct lexProcessFunctions* functions,
