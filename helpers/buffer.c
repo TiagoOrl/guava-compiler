@@ -93,5 +93,3 @@ void buffer_free(struct buffer* buffer)
     free(buffer->data);
     free(buffer);
 }
-
-

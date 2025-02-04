@@ -2,82 +2,68 @@
 #include "helpers/vector.h"
 #include <assert.h>
 
+struct vector* node_vector = NULL;
+struct vector* node_vector_root = NULL;
 
-struct vector* nodeVector = NULL;
-struct vector* nodeVectorRoot = NULL;
-
-
-void nodeSetVector(struct vector* vec, struct vector* rootVec) {
-    nodeVector = vec;
-    nodeVectorRoot = rootVec;
+void node_set_vector(struct vector* vec, struct vector* root_vec)
+{
+    node_vector = vec;
+    node_vector_root = root_vec;
 }
 
-
-void nodePush(struct node* node) {
-    vector_push(nodeVector, &node);
+void node_push(struct node* node)
+{
+    vector_push(node_vector, &node);
 }
 
-struct node* nodePeekOrNull() {
-    return vector_back_ptr_or_null(nodeVector);
+struct node* node_peek_or_null()
+{
+    return vector_back_ptr_or_null(node_vector);
 }
 
-
-struct node* nodePeek() {
-    return *(struct node**)(vector_back(nodeVector));
+struct node* node_peek()
+{
+    return *(struct node**)(vector_back(node_vector));
 }
 
+struct node* node_pop()
+{
+    struct node* last_node = vector_back_ptr(node_vector);
+    struct node* last_node_root = vector_empty(node_vector) ? NULL : vector_back_ptr_or_null(node_vector_root);
 
-struct node* nodePop() {
-    struct node* lastNode = vector_back_ptr(nodeVector);
-    struct node* lastNodeRoot = vector_empty(nodeVector) ? 
-        NULL : vector_back_ptr_or_null(nodeVectorRoot);
+    vector_pop(node_vector);
 
-    vector_pop(nodeVector);
+    if (last_node == last_node_root)
+    {
+        vector_pop(node_vector_root);
+    }
 
-    if (lastNode == lastNodeRoot) 
-        vector_pop(nodeVectorRoot);
-    
+    return last_node;
 
-    return lastNode;
 }
 
-
-bool nodeIsExpressionable(struct node* node) {
-    return 
-        node->type == NODE_TYPE_EXPRESSION || 
-        node->type == NODE_TYPE_EXPRESSION_PARENTHESES ||
-        node->type == NODE_TYPE_UNARY ||
-        node->type == NODE_TYPE_IDENTIFIER ||
-        node->type == NODE_TYPE_NUMBER ||
-        node->type == NODE_TYPE_STRING;
+bool node_is_expressionable(struct node* node)
+{
+    return node->type == NODE_TYPE_EXPRESSION || node->type == NODE_TYPE_EXPRESSION_PARENTHESES || node->type == NODE_TYPE_UNARY || node->type == NODE_TYPE_IDENTIFIER || node->type == NODE_TYPE_NUMBER || node->type == NODE_TYPE_STRING;
 }
 
-
-struct node* nodePeekExpressionableOrNull() {
-    struct node* lastNode = nodePeekOrNull();
-
-    return nodeIsExpressionable(lastNode) ? lastNode : NULL;
+struct node* node_peek_expressionable_or_null()
+{
+    struct node* last_node = node_peek_or_null();
+    return node_is_expressionable(last_node) ? last_node : NULL;
 }
 
-
-void makeExpNode(struct node* leftNode, struct node* rightNode, const char* op) {
-    assert(leftNode);
-    assert(rightNode);
-
-    nodeCreate(&(struct node){
-        .type = NODE_TYPE_EXPRESSION,
-        .exp.left = leftNode,
-        .exp.right = rightNode,
-        .exp.op = op
-    });
+void make_exp_node(struct node* left_node, struct node* right_node, const char* op)
+{
+    assert(left_node);
+    assert(right_node);
+    node_create(&(struct node){.type=NODE_TYPE_EXPRESSION,.exp.left=left_node,.exp.right=right_node,.exp.op=op});
 }
-
-
-struct node* nodeCreate(struct node* _node) {
+struct node* node_create(struct node* _node)
+{
     struct node* node = malloc(sizeof(struct node));
     memcpy(node, _node, sizeof(struct node));
-
-    #warning "we should set the binded owner and the binded funciton here"
-    nodePush(node);
+    #warning "We should set the binded owner and binded function here"
+    node_push(node);
     return node;
 }

@@ -2,59 +2,58 @@
 #include <stdlib.h>
 #include "compiler.h"
 #include "helpers/vector.h"
-
-struct compileProcess * compileProcessCreate(const char * filename, const char * outFilename, int flags) {
-    FILE * file  = fopen(filename, "r");
-
-    if (!file) 
-        return NULL;
-
-
-    FILE * outFile = NULL;
-
-    if (outFilename) {
-        outFile = fopen(outFilename, "w");
-
-    if (!outFile)
+struct compile_process *compile_process_create(const char *filename, const char *filename_out, int flags)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
         return NULL;
     }
-    
-    struct compileProcess * process = calloc(1, sizeof(struct compileProcess));
-    process->nodeVec = vector_create(sizeof(struct node*));
-    process->nodeTreeVec = vector_create(sizeof(struct node*));
+
+    FILE *out_file = NULL;
+    if (filename_out)
+    {
+        out_file = fopen(filename_out, "w");
+        if (!out_file)
+        {
+            return NULL;
+        }
+    }
+
+    struct compile_process* process = calloc(1, sizeof(struct compile_process));
+    process->node_vec = vector_create(sizeof(struct node*));
+    process->node_tree_vec = vector_create(sizeof(struct node*));
     
     process->flags = flags;
-    process->cFile.fp = file;
-    process->oFile = outFile;
-
+    process->cfile.fp = file;
+    process->ofile = out_file;
     return process;
 }
 
-
-char compileProcessNextChar(struct lexProcess * lexProcess) {
-    struct compileProcess * compiler = lexProcess->compiler;
+char compile_process_next_char(struct lex_process* lex_process)
+{
+    struct compile_process* compiler = lex_process->compiler;
     compiler->pos.col += 1;
-
-    char c = getc(compiler->cFile.fp);
-
+    char c = getc(compiler->cfile.fp);
     if (c == '\n')
     {
-        compiler->pos.line += 1;
+        compiler->pos.line +=1 ;
         compiler->pos.col = 1;
     }
 
     return c;
 }
 
-char compileProcessPeekChar(struct lexProcess * lexProcess) {
-    struct compileProcess * compiler = lexProcess->compiler;
-    char c = getc(compiler->cFile.fp);
-    ungetc(c, compiler->cFile.fp);
-
+char compile_process_peek_char(struct lex_process* lex_process)
+{
+    struct compile_process* compiler = lex_process->compiler;
+    char c = getc(compiler->cfile.fp);
+    ungetc(c, compiler->cfile.fp);
     return c;
 }
 
-void compileProcessPushChar(struct lexProcess * lexProcess, char c) {
-    struct compileProcess * compiler = lexProcess->compiler;
-    ungetc(c, compiler->cFile.fp);
+void compile_process_push_char(struct lex_process* lex_process, char c)
+{
+    struct compile_process* compiler = lex_process->compiler;
+    ungetc(c, compiler->cfile.fp);
 }
