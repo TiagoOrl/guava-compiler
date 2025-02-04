@@ -14,6 +14,7 @@ extern struct expressionableOpPrecedenceGroup opPrecedence[TOTAL_OPERATOR_GROUPS
 
 int parseExpressionalbleSingle(struct history* history);
 void parseExpressionable(struct history* history);
+void parserDatatypeAdjustForSecondary(struct datatype* datatype, struct token* datatypeSecondaryToken);
 
 static struct compileProcess * currentProcess;
 static struct token* parserLastToken;
@@ -333,14 +334,110 @@ int parserGetPointerDepth() {
 }
 
 
+bool parserDatatypeIsSecondaryAllowed(int expectedType) {
+    return expectedType ==  DATATYPE_EXPECT_PRIMITIVE;
+}
+
+
+bool parserDatatypeIsSecondaryAllowedForType(const char* type) {
+    return 
+    S_EQ(type, "long") || 
+    S_EQ(type, "short") || 
+    S_EQ(type, "double") || 
+    S_EQ(type, "float");
+}
+
+
+void parserDatatypeInitTypeAndSizeForPrimitive(
+    struct token* datatypeToken,
+    struct token* datatypeSecondaryToken,
+    struct datatype* datatypeOut
+) {
+    if (!parserDatatypeIsSecondaryAllowedForType(datatypeToken->sval) && datatypeSecondaryToken) 
+        compilerError(currentProcess, "your not allowed a secondary datatype here for the given datatype %s\n", datatypeToken->sval);
+
+    if(S_EQ(datatypeToken->sval, "void")) {
+        datatypeOut->type = DATATYPE_VOID;
+        datatypeOut->size = DATASIZE_ZERO;
+    }
+
+    else if(S_EQ(datatypeToken->sval, "char")) {
+        datatypeOut->type = DATATYPE_CHAR;
+        datatypeOut->size = DATASIZE_BYTE;
+    }
+
+    else if(S_EQ(datatypeToken->sval, "short")) {
+        datatypeOut->type = DATATYPE_SHORT;
+        datatypeOut->size = DATASIZE_WORD;
+    }
+
+    else if(S_EQ(datatypeToken->sval, "int")) {
+        datatypeOut->type = DATATYPE_INTEGER;
+        datatypeOut->size = DATASIZE_DWORD;
+    }
+
+    else if(S_EQ(datatypeToken->sval, "long")) {
+        datatypeOut->type = DATATYPE_LONG;
+        datatypeOut->size = DATASIZE_DWORD;
+    }
+
+    else if(S_EQ(datatypeToken->sval, "float")) {
+        datatypeOut->type = DATATYPE_FLOAT;
+        datatypeOut->size = DATASIZE_DWORD;
+    }
+
+    else if(S_EQ(datatypeToken->sval, "double")) {
+        datatypeOut->type = DATATYPE_DOUBLE;
+        datatypeOut->size = DATASIZE_DWORD;
+    }
+
+    else {
+        compilerError(currentProcess, "BUG: Invalid primitive datatype\n");
+    }
+
+    parserDatatypeAdjustForSecondary(datatypeOut, datatypeSecondaryToken);
+}
+
+
+void parserDatatypeAdjustForSecondary(struct datatype* datatype, struct token* datatypeSecondaryToken) {
+    if(!datatypeSecondaryToken)
+        return;
+
+    struct datatype* secondaryDatatype = calloc(1, sizeof(struct datatype));
+    parserDatatypeInitTypeAndSizeForPrimitive(datatypeSecondaryToken, NULL, secondaryDatatype);
+    datatype->size += secondaryDatatype->size;
+    datatype->secondary = secondaryDatatype;
+    datatype->flags |= DATATYPE_FLAG_IS_SECONDARY;
+}
+
+
 void parserDatatypeInitTypeAndSize(
     struct token* datatypeToken, 
-    struct token* ddatatypeSecondaryToken,
+    struct token* datatypeSecondaryToken,
     struct datatype* datatypeOut,
     int pointerDepth,
     int expectedType
 ) {
-    
+    if (!parserDatatypeIsSecondaryAllowed(expectedType) && datatypeSecondaryToken) {
+        compilerError(currentProcess, "You provided an invalid secondary datatype\n");
+    }
+
+    switch(expectedType) {
+        case DATATYPE_EXPECT_PRIMITIVE:
+            parserDatatypeInitTypeAndSizeForPrimitive(
+                datatypeToken,
+                datatypeSecondaryToken,
+                datatypeOut);
+        break;
+
+        case DATATYPE_EXPECT_STRUCT:
+        case DATATYPE_EXPECT_UNION:
+            compilerError(currentProcess, "Struct and union types are currently unsupported\n");
+        break;
+
+        default:
+            compilerError(currentProcess, "BUG: unsupported datatype expectation\n");
+    }
 }
 
 
@@ -351,7 +448,23 @@ void parserDatatypeInit(
     int pointerDepth,
     int expectedType
 ) {
+    parserDatatypeInitTypeAndSize(
+        datatypeToken, 
+        datatypeSecondaryToken, 
+        datatypeOut, 
+        pointerDepth,
+        expectedType);
+    
+    datatypeOut->typeStr = datatypeToken->sval;
 
+    if(
+        S_EQ(datatypeToken->sval, "long") && 
+        datatypeSecondaryToken && 
+        S_EQ(datatypeToken->sval, "long")
+    ){
+        compilerWarning(currentProcess, "Our compiler does not support 64 bits longs, therefore, your long long is defaulting to 32 bits\n");
+        datatypeOut->size = DATASIZE_DWORD;
+    }
 }
 
 
@@ -375,6 +488,13 @@ void parseDatatypeType(struct datatype* dtype) {
     }
 
     int pointerDepth = parserGetPointerDepth();
+    parserDatatypeInit(
+        datatypeToken, 
+        datatypeSecondaryToken, 
+        dtype, 
+        pointerDepth,
+        expectedType
+    );
 }
 
 

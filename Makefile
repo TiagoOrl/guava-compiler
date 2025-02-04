@@ -1,4 +1,4 @@
-OBJECTS= ./build/expressionable.o ./build/compiler.o ./build/cprocess.o ./build/lex_process.o ./build/node.o ./build/parser.o ./build/lexer.o ./build/token.o ./build/helpers/vector.o ./build/helpers/buffer.o
+OBJECTS= ./build/datatype.o ./build/expressionable.o ./build/compiler.o ./build/cprocess.o ./build/lex_process.o ./build/node.o ./build/parser.o ./build/lexer.o ./build/token.o ./build/helpers/vector.o ./build/helpers/buffer.o
 INCLUDES= -I./
 
 
@@ -31,6 +31,9 @@ all: ${OBJECTS}
 
 ./build/token.o: ./token.c
 	gcc token.c ${INCLUDES} -o ./build/token.o -g -c
+	
+./build/datatype.o: ./datatype.c
+	gcc datatype.c ${INCLUDES} -o ./build/datatype.o -g -c
 
 ./build/expressionable.o: ./expressionable.c
 	gcc ./expressionable.c ${INCLUDES} -o ./build/expressionable.o -g -c

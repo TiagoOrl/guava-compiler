@@ -211,6 +211,8 @@ enum
 };
 
 
+
+
 enum {
     NODE_FLAG_INSIDE_EXPRESSION = 0b000000001
 };
@@ -292,7 +294,7 @@ struct datatype
     // long long, long int...
     struct datatype* secondary;
     // long
-    const char typeStr;
+    const char* typeStr;
     //size of the datatype
     size_t size;
 
@@ -311,6 +313,16 @@ enum
     DATATYPE_EXPECT_PRIMITIVE,
     DATATYPE_EXPECT_UNION,
     DATATYPE_EXPECT_STRUCT
+};
+
+
+enum
+{
+    DATASIZE_ZERO = 0,
+    DATASIZE_BYTE = 1,
+    DATASIZE_WORD = 2,
+    DATASIZE_DWORD = 4,
+    DATASIZE_DDWORD = 8
 };
 
 
