@@ -41,6 +41,7 @@ static void parser_ignore_nl_or_comment(struct token *token)
     }
 }
 
+
 static struct token *token_next()
 {
     struct token *next_token = vector_peek_no_increment(current_process->token_vec);
@@ -49,6 +50,21 @@ static struct token *token_next()
     parser_last_token = next_token;
     return vector_peek(current_process->token_vec);
 }
+
+
+static void expect_sym(char c)
+{
+    struct token* next_token = token_next();
+
+    if (
+        !next_token || 
+        next_token->type != TOKEN_TYPE_SYMBOL ||
+        next_token->cval != c
+    )
+        compiler_error(current_process, "Expected symbol \'%c\', however something else was provided\n", c);
+
+}
+
 
 static struct token *token_peek_next()
 {
@@ -547,6 +563,15 @@ void make_variable_node_and_register(
 }    
 
 
+void make_variable_list_node(struct vector* var_list)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_VARIABLE_LIST,
+        .var_list.list = var_list
+    });
+}
+
+
 void parse_variable(struct datatype* dtype, struct token* name_token, struct history* history)
 {
     struct node* value_node = NULL;
@@ -583,13 +608,36 @@ void parse_variable_function_or_struct_union(struct history* history)
     // check if this is a funciton declaration
     parse_variable(&dtype, name_token, history);
 
+    if (token_is_operator(token_peek_next(), ","))
+    {
+        struct vector* var_list = vector_create(sizeof(struct node*));
+        // pop of the original variable
+        struct node* var_node = node_pop();
+
+        vector_push(var_list, &var_node);
+
+        while(token_is_operator(token_peek_next(), ","))
+        {
+            // get rid of the comma
+            token_next();
+            // name fo the var after the comma
+            name_token = token_next();
+            parse_variable(&dtype, name_token, history);
+            var_node = node_pop();
+            vector_push(var_list, var_node);
+        }
+
+        make_variable_list_node(var_list);
+    }
+
+    expect_sym(';');
 }
 
 
 void parse_keyword(struct history* history)
 {
     struct token* token = token_peek_next();
-    
+
     if (is_keyword_variable_modifier(token->sval) || keyword_is_datatype(token->sval))
     {
         parse_variable_function_or_struct_union(history);
