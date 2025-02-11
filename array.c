@@ -35,8 +35,29 @@ size_t array_brackets_calculate_size_from_index(
     struct array_brackets* brackets,
     int index)
 {
-    #warning "Not yet implemented calculating the size of array brackets"
-    return 0;
+    struct vector* array_vec = array_brackets_node_vector(brackets);
+    size_t size = dtype->size;
+
+    // case is char* str = not an array
+    if (index >= vector_count(array_vec))
+        return size;
+
+    vector_set_peek_pointer(array_vec, index);
+    struct node* array_bracket_node = vector_peek_ptr(array_vec);
+
+    if(!array_bracket_node)
+        return 0;
+
+
+    while(array_bracket_node)
+    {
+        assert(array_bracket_node->bracket.inner->type == NODE_TYPE_NUMBER);
+        int number = array_bracket_node->bracket.inner->llnum;
+        size *= number;
+        array_bracket_node = vector_peek_ptr(array_vec);
+    }
+    
+    return size;
 }
 
 
