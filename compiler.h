@@ -342,6 +342,21 @@ struct node
             //  int x[50] : [50] would be the bracket node. The inner would be NODE_TYPE_NUMBER value of 50
             struct node* inner;
         } bracket;
+
+        struct _struct
+        {
+            const char* name;
+            struct node* body_n;
+            /**
+             * struct abc
+             * {
+             * 
+             * } var_name;
+             * 
+             * NULL if no variable attached to structure
+             */
+            struct node* var;
+        } _struct;
     };
     
     union 
@@ -436,7 +451,21 @@ bool keyword_is_datatype(const char *str);
 bool token_is_primitive_keyword(struct token* token);
 
 bool datatype_is_struct_or_union_for_name(const char* name);
+bool datatype_is_struct_or_union(struct datatype* dtype);
 bool token_is_operator(struct token* token, const char* val);
+struct scope* scope_new(struct compile_process* process, int flags);
+struct scope* scope_create_root(struct compile_process* process);
+void scope_free_root(struct compile_process* process);
+void scope_iteration_start(struct scope* scope);
+void scope_iteration_end(struct scope* scope);
+void* scope_iterate_back(struct scope* scope);
+void* scope_last_entity_at_scope(struct scope* scope);
+void* scope_last_entity_from_scope_stop_at(struct scope* scope, struct scope* stop_scope);
+void* scope_last_entity_stop_at(struct compile_process* process, struct scope* stop_scope);
+void* scope_last_entity(struct compile_process* process);
+void scope_push(struct compile_process* process, void* ptr, size_t elem_size);
+void scope_scope_finish(struct compile_process* process);
+struct scope* scope_current(struct compile_process* process);
 
 struct node* node_create(struct node* _node);
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);

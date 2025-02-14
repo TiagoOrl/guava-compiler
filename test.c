@@ -1,1 +1,4 @@
-int x[40][10];
+struct abc
+{
+    
+};

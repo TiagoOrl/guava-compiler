@@ -132,7 +132,7 @@ void scope_push(struct compile_process* process, void* ptr, size_t elem_size)
 }
 
 
-void scope_scope_finish(struct compile_process* process)
+void scope_finish(struct compile_process* process)
 {
     struct scope* new_current_scope = process->scope.current->parent;
     scope_dealloc(process->scope.current);
