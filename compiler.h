@@ -357,6 +357,18 @@ struct node
              */
             struct node* var;
         } _struct;
+
+        struct body
+        {
+            //struct node* of vector of statements
+            struct vector* statements;
+            // the sum of the combined variables inside this body
+            size_t size;
+            // true if the variable size had to be increased due to padding in body
+            bool padded;
+            // pointer to the largest variable node in the statements vector
+            struct node* largest_var_node;
+        } body;
     };
     
     union 
@@ -470,6 +482,7 @@ struct scope* scope_current(struct compile_process* process);
 struct node* node_create(struct node* _node);
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
 void make_bracket_node(struct node* node);
+void make_body_node(struct vector* body_vec, size_t size, bool padded, struct node* largest_var_node);
 
 struct node* node_pop();
 struct node* node_peek();
