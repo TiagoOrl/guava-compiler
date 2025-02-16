@@ -794,12 +794,12 @@ void parse_struct_or_union(struct datatype* dtype)
 
 void parse_variable_function_or_struct_union(struct history* history)
 {
-    struct datatype* dtype;
+    struct datatype dtype;
     parse_datatype(&dtype); 
 
     if (datatype_is_struct_or_union(&dtype) && token_next_is_symbol('{'))
     {
-        parse_struct_or_union(dtype);
+        parse_struct_or_union(&dtype);
     }
 
     // ignore int abbreviations if necessary i.e. "long int"
