@@ -329,6 +329,7 @@ struct node
             struct datatype type;
             const char* name;
             struct node* val;
+            int padding;
         } var;
 
         struct varlist
@@ -474,6 +475,10 @@ bool token_is_operator(struct token* token, const char* val);
 size_t variable_size(struct node* var_node);
 // sums the variable size of all variable nodes inside the variable list node
 size_t variable_size_for_list(struct node* var_list_node);
+int padding(int val, int to);
+int align_value(int val, int to);
+int align_value_treat_positive(int val, int to);
+int compute_sum_padding(struct vector* vec);
 
 struct scope* scope_new(struct compile_process* process, int flags);
 struct scope* scope_create_root(struct compile_process* process);
