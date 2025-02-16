@@ -462,6 +462,10 @@ bool token_is_nl_or_comment_or_newline_seperator(struct token *token);
 bool keyword_is_datatype(const char *str);
 bool token_is_primitive_keyword(struct token* token);
 
+size_t datatype_size_for_array_access(struct datatype* dtype);
+size_t datatype_element_size(struct datatype* dtype);
+size_t datatype_size_no_ptr(struct datatype* dtype);
+size_t datatype_size(struct datatype* dtype);
 bool datatype_is_struct_or_union_for_name(const char* name);
 bool datatype_is_struct_or_union(struct datatype* dtype);
 bool token_is_operator(struct token* token, const char* val);
@@ -476,7 +480,7 @@ void* scope_last_entity_from_scope_stop_at(struct scope* scope, struct scope* st
 void* scope_last_entity_stop_at(struct compile_process* process, struct scope* stop_scope);
 void* scope_last_entity(struct compile_process* process);
 void scope_push(struct compile_process* process, void* ptr, size_t elem_size);
-void scope_scope_finish(struct compile_process* process);
+void scope_finish(struct compile_process* process);
 struct scope* scope_current(struct compile_process* process);
 
 struct node* node_create(struct node* _node);
