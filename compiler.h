@@ -469,6 +469,12 @@ size_t datatype_size(struct datatype* dtype);
 bool datatype_is_struct_or_union_for_name(const char* name);
 bool datatype_is_struct_or_union(struct datatype* dtype);
 bool token_is_operator(struct token* token, const char* val);
+
+// get the var size of the given variable node
+size_t variable_size(struct node* var_node);
+// sums the variable size of all variable nodes inside the variable list node
+size_t variable_size_for_list(struct node* var_list_node);
+
 struct scope* scope_new(struct compile_process* process, int flags);
 struct scope* scope_create_root(struct compile_process* process);
 void scope_free_root(struct compile_process* process);
