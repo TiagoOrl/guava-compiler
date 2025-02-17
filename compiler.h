@@ -471,6 +471,8 @@ bool datatype_is_struct_or_union_for_name(const char* name);
 bool datatype_is_struct_or_union(struct datatype* dtype);
 bool token_is_operator(struct token* token, const char* val);
 
+struct node* variable_struct_or_union_body_node(struct node* node);
+
 // get the var size of the given variable node
 size_t variable_size(struct node* var_node);
 // sums the variable size of all variable nodes inside the variable list node
@@ -506,6 +508,7 @@ void node_push(struct node* node);
 void node_set_vector(struct vector* vec, struct vector* root_vec);
 
 bool node_is_expressionable(struct node* node);
+bool node_is_struct_or_union_variable(struct node* node);
 struct node* node_peek_expressionable_or_null();
 
 
