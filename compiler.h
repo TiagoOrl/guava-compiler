@@ -329,6 +329,7 @@ struct node
             struct datatype type;
             const char* name;
             struct node* val;
+            int padding;
         } var;
 
         struct varlist
@@ -357,6 +358,18 @@ struct node
              */
             struct node* var;
         } _struct;
+
+        struct body
+        {
+            //struct node* of vector of statements
+            struct vector* statements;
+            // the sum of the combined variables inside this body
+            size_t size;
+            // true if the variable size had to be increased due to padding in body
+            bool padded;
+            // pointer to the largest variable node in the statements vector
+            struct node* largest_var_node;
+        } body;
     };
     
     union 
@@ -450,9 +463,25 @@ bool token_is_nl_or_comment_or_newline_seperator(struct token *token);
 bool keyword_is_datatype(const char *str);
 bool token_is_primitive_keyword(struct token* token);
 
+size_t datatype_size_for_array_access(struct datatype* dtype);
+size_t datatype_element_size(struct datatype* dtype);
+size_t datatype_size_no_ptr(struct datatype* dtype);
+size_t datatype_size(struct datatype* dtype);
 bool datatype_is_struct_or_union_for_name(const char* name);
 bool datatype_is_struct_or_union(struct datatype* dtype);
 bool token_is_operator(struct token* token, const char* val);
+
+struct node* variable_struct_or_union_body_node(struct node* node);
+
+// get the var size of the given variable node
+size_t variable_size(struct node* var_node);
+// sums the variable size of all variable nodes inside the variable list node
+size_t variable_size_for_list(struct node* var_list_node);
+int padding(int val, int to);
+int align_value(int val, int to);
+int align_value_treat_positive(int val, int to);
+int compute_sum_padding(struct vector* vec);
+
 struct scope* scope_new(struct compile_process* process, int flags);
 struct scope* scope_create_root(struct compile_process* process);
 void scope_free_root(struct compile_process* process);
@@ -464,12 +493,13 @@ void* scope_last_entity_from_scope_stop_at(struct scope* scope, struct scope* st
 void* scope_last_entity_stop_at(struct compile_process* process, struct scope* stop_scope);
 void* scope_last_entity(struct compile_process* process);
 void scope_push(struct compile_process* process, void* ptr, size_t elem_size);
-void scope_scope_finish(struct compile_process* process);
+void scope_finish(struct compile_process* process);
 struct scope* scope_current(struct compile_process* process);
 
 struct node* node_create(struct node* _node);
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
 void make_bracket_node(struct node* node);
+void make_body_node(struct vector* body_vec, size_t size, bool padded, struct node* largest_var_node);
 
 struct node* node_pop();
 struct node* node_peek();
@@ -478,6 +508,7 @@ void node_push(struct node* node);
 void node_set_vector(struct vector* vec, struct vector* root_vec);
 
 bool node_is_expressionable(struct node* node);
+bool node_is_struct_or_union_variable(struct node* node);
 struct node* node_peek_expressionable_or_null();
 
 
