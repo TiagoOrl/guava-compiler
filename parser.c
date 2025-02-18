@@ -48,8 +48,9 @@ struct parser_scope_entity* parser_scope_last_entity_stop_global_scope()
 
 enum
 {
-    HISTORY_FLAG_INSIDE_UNION = 0b00000001,
-    HISTORY_FLAG_IS_UPWARD_STACK = 0b00000010
+    HISTORY_FLAG_INSIDE_UNION =    0b00000001,
+    HISTORY_FLAG_IS_UPWARD_STACK = 0b00000010,
+    HISTORY_FLAG_IS_GLOBAL_SCOPE = 0b00000100
 };
 
 struct history
@@ -653,8 +654,20 @@ void parser_scope_offset_for_stack(struct node* node, struct history* history)
 }
 
 
+int parser_scope_offset_for_global(struct node* node, struct history* history)
+{
+    return 0;
+}
+
+
 void parser_scope_offset(struct node* var_node, struct history* history)
 {
+    if (history->flags & HISTORY_FLAG_IS_GLOBAL_SCOPE)
+    {
+        parser_scope_offset_for_global(var_node, history);
+        return;
+    }
+        
     parser_scope_offset_for_stack(var_node, history);
 }
 
