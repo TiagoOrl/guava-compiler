@@ -482,6 +482,7 @@ struct node* variable_node(struct node* node);
 bool variable_node_is_primitive(struct node* node);
 // sums the variable size of all variable nodes inside the variable list node
 size_t variable_size_for_list(struct node* var_list_node);
+struct node* variable_node_or_list(struct node* node);
 int padding(int val, int to);
 int align_value(int val, int to);
 int align_value_treat_positive(int val, int to);
