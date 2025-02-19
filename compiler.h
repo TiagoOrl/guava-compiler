@@ -330,6 +330,8 @@ struct node
             const char* name;
             struct node* val;
             int padding;
+            // aligned offset
+            int aoffset;
         } var;
 
         struct varlist
@@ -469,14 +471,18 @@ size_t datatype_size_no_ptr(struct datatype* dtype);
 size_t datatype_size(struct datatype* dtype);
 bool datatype_is_struct_or_union_for_name(const char* name);
 bool datatype_is_struct_or_union(struct datatype* dtype);
+bool datatype_is_primitive(struct datatype* dtype);
 bool token_is_operator(struct token* token, const char* val);
 
 struct node* variable_struct_or_union_body_node(struct node* node);
 
 // get the var size of the given variable node
 size_t variable_size(struct node* var_node);
+struct node* variable_node(struct node* node);
+bool variable_node_is_primitive(struct node* node);
 // sums the variable size of all variable nodes inside the variable list node
 size_t variable_size_for_list(struct node* var_list_node);
+struct node* variable_node_or_list(struct node* node);
 int padding(int val, int to);
 int align_value(int val, int to);
 int align_value_treat_positive(int val, int to);

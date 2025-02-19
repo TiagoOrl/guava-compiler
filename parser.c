@@ -40,9 +40,18 @@ struct parser_scope_entity* parser_new_scope_entity(struct node* node, int stack
 }
 
 
+struct parser_scope_entity* parser_scope_last_entity_stop_global_scope()
+{
+    return scope_last_entity_stop_at(current_process, current_process->scope.root);
+}
+
+
 enum
 {
-    HISTORY_FLAG_INSIDE_UNION = 0b00000001,
+        HISTORY_FLAG_INSIDE_UNION = 0b00000001,
+     HISTORY_FLAG_IS_UPWARD_STACK = 0b00000010,
+     HISTORY_FLAG_IS_GLOBAL_SCOPE = 0b00000100,
+    HISTORY_FLAG_INSIDE_STRUCTURE = 0b00001000,
 };
 
 struct history
@@ -81,9 +90,15 @@ void parser_scope_finish()
 }
 
 
-void parser_scope_push(struct node* node, size_t size)
+struct parser_scope_entity* parser_scope_last_entity()
 {
-    scope_push(current_process, node, size);
+    return scope_last_entity(current_process);
+}
+
+
+void parser_scope_push(struct parser_scope_entity* entity, size_t size)
+{
+    scope_push(current_process, entity, size);
 }
 
 
@@ -620,6 +635,73 @@ void make_variable_node(
 }
 
 
+void parser_scope_offset_for_stack(struct node* node, struct history* history)
+{
+    struct parser_scope_entity* last_entity = parser_scope_last_entity_stop_global_scope();
+    bool upward_stack = history->flags & HISTORY_FLAG_IS_UPWARD_STACK;
+    int offset = -variable_size(node);
+
+    if (upward_stack)
+    {
+        #warning "Handle upward stack"
+        compiler_error(current_process, "Not yet implemented\n");
+    }
+
+    if (last_entity)
+    {
+        offset += variable_node(last_entity->node)->var.aoffset;
+        if (variable_node_is_primitive(node))
+        {
+            variable_node(node)->var.padding = padding(upward_stack ? offset : -offset, node->var.type.size);
+        }
+    }
+        
+    
+
+}
+
+
+void parser_scope_offset_for_global(struct node* node, struct history* history)
+{
+    return;
+}
+
+
+void parser_scope_offset_for_structure(struct node* node, struct history* history)
+{
+    int offset = 0;
+    struct parser_scope_entity* last_entity = parser_scope_last_entity();
+    
+    if (last_entity)
+    {
+        offset += last_entity->stack_offset + last_entity->node->var.type.size;
+        if (variable_node_is_primitive(node))
+            node->var.padding = padding(offset, node->var.type.size);
+        
+
+        node->var.aoffset = offset + node->var.padding;
+    }
+}
+
+
+void parser_scope_offset(struct node* var_node, struct history* history)
+{
+    if (history->flags & HISTORY_FLAG_IS_GLOBAL_SCOPE)
+    {
+        parser_scope_offset_for_global(var_node, history);
+        return;
+    }
+
+    if (history->flags & HISTORY_FLAG_INSIDE_STRUCTURE)
+    {
+        parser_scope_offset_for_structure(var_node, history);
+        return;
+    }
+        
+    parser_scope_offset_for_stack(var_node, history);
+}
+
+
 void make_variable_node_and_register(
     struct history* history, 
     struct datatype* dtype,
@@ -631,8 +713,12 @@ void make_variable_node_and_register(
 
     #warning "Remeber to calculate the scope offset and push to the scope"
     // Calculate the scope offset
+    parser_scope_offset(var_node, history);
     // Push the variable node to the scope
-
+    parser_scope_push(
+        parser_new_scope_entity(var_node, var_node->var.aoffset, 0), 
+        var_node->var.type.size
+    );
     node_push(var_node);
 }    
 
@@ -834,6 +920,72 @@ void parse_body_single_statement(size_t* variable_size, struct vector* body_vec,
 }
 
 
+void parse_body_multiple_statements(size_t* variable_size, struct vector* body_vec, struct history* history)
+{
+    // Create a blank body node
+    make_body_node(NULL, 0, false, NULL);
+    struct node* body_node = node_pop();
+
+    body_node->binded.owner = parser_current_body;
+    parser_current_body = body_node;
+
+    struct node* stmt_node = NULL;
+    struct node* largest_possible_var_node = NULL;
+    struct node* largest_align_eligible_var_node = NULL;
+
+    // We have a body i.e. { }, therefore, we must pop off the left {
+    expect_sym('{');
+
+    while(!token_next_is_symbol('}'))
+    {
+        parse_statement(history_down(history, history->flags));
+        stmt_node = node_pop();
+
+        if (stmt_node->type == NODE_TYPE_VARIABLE)
+        {
+            if (
+            !largest_possible_var_node ||
+            (largest_possible_var_node->var.type.size <= stmt_node->var.type.size)
+            ) {
+                largest_possible_var_node = stmt_node;
+            }
+
+            if (variable_node_is_primitive(stmt_node))
+            {
+                if (
+                !largest_align_eligible_var_node ||
+                (largest_align_eligible_var_node->var.type.size <= stmt_node->var.type.size)
+                ) {
+                    largest_align_eligible_var_node = stmt_node;
+                }
+            }
+        }
+
+
+        // push the statement node to the body vector
+        vector_push(body_vec, &stmt_node);
+
+        // We may have to Change the variable size if this statement is a variable
+        parser_append_size_for_node(history, variable_size, variable_node_or_list(stmt_node));
+    }
+
+    // Pop off the right curly brace
+    expect_sym('}');
+    parser_finalize_body(
+        history, 
+        body_node, 
+        body_vec, 
+        variable_size, 
+        largest_align_eligible_var_node,
+        largest_possible_var_node
+    );
+    parser_current_body = body_node->binded.owner;
+
+    // Let's now push the body node back to the stack
+    node_push(body_node);
+}
+
+
 void parse_body(size_t* variable_size, struct history* history)
 {
     parser_scope_new();
@@ -849,15 +1001,17 @@ void parse_body(size_t* variable_size, struct history* history)
         parser_scope_finish();
         return;
     }
-        
-    
+
+    // We have some statements between curly braces { int a; int b; int c; ...}
+    parse_body_multiple_statements(variable_size, body_vec, history);
     parser_scope_finish();
+
+    #warning "Dont forget to adjust the function stack size"
 }
 
 
 void parse_struct_no_new_scope(struct datatype* dtype)
 {
-    
 }
 
 

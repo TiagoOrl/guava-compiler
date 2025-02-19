@@ -1,7 +1,7 @@
-struct abc
+
+int x = 40;
+
+int main()
 {
-    int a;
-    int b;  
-};
-
-
+    int x = 40;
+}
