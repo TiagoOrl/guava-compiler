@@ -460,6 +460,8 @@ int parse(struct compile_process* process);
  */
 struct lex_process* tokens_build_for_string(struct compile_process* compiler, const char* str);
 
+
+bool token_is_identifier(struct token* token);
 bool token_is_keyword(struct token* token, const char* value);
 bool token_is_symbol(struct token* token, char c);
 
