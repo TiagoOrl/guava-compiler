@@ -105,7 +105,10 @@ void symresolver_build_for_function_node(struct compile_process* process, struct
 
 void symresolver_build_for_structure_node(struct compile_process* process, struct node* node)
 {
-    compiler_error(process, "Structs are not yet supported\n");
+    if (node->flags & NODE_FLAG_IS_FORWARD_DECLARATION)
+        return; // We do not register forward declarations.
+
+    symresolver_register_symbol(process, node->_struct.name, SYMBOL_TYPE_NODE, node);
 }
 
 
