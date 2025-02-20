@@ -1,7 +1,4 @@
-
-int x = 40;
-
-int main()
-{
-    int x = 40;
+struct dog {
+    int x;
+    int y;
 }

@@ -259,7 +259,9 @@ enum
 
 enum
 {
-    NODE_FLAG_INSIDE_EXPRESSION = 0b00000001
+    NODE_FLAG_INSIDE_EXPRESSION      = 0b00000001,
+    NODE_FLAG_IS_FORWARD_DECLARATION = 0b00000010,
+    NODE_FLAG_HAS_VARIABLE_COMBINED  = 0b00000100
 };
 
 struct array_brackets
@@ -458,6 +460,8 @@ int parse(struct compile_process* process);
  */
 struct lex_process* tokens_build_for_string(struct compile_process* compiler, const char* str);
 
+
+bool token_is_identifier(struct token* token);
 bool token_is_keyword(struct token* token, const char* value);
 bool token_is_symbol(struct token* token, char c);
 
@@ -502,7 +506,17 @@ void scope_push(struct compile_process* process, void* ptr, size_t elem_size);
 void scope_finish(struct compile_process* process);
 struct scope* scope_current(struct compile_process* process);
 
+struct symbol* symresolver_get_symbol(struct compile_process* process, const char* name);
+void symresolver_build_for_node(struct compile_process* process, struct node* node);
+void symresolver_initialize(struct compile_process* process);
+void symresolver_new_table(struct compile_process* process);
+void symresolver_end_table(struct compile_process* process);
+
 struct node* node_create(struct node* _node);
+struct node* node_from_sym(struct symbol* sym);
+struct node* node_from_symbol(struct compile_process* current_process, const char* name);
+struct node* struct_node_for_name(struct compile_process* current_process, const char* name);
+void make_struct_node(const char* name, struct node* body_node);
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
 void make_bracket_node(struct node* node);
 void make_body_node(struct vector* body_vec, size_t size, bool padded, struct node* largest_var_node);
