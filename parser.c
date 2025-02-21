@@ -76,6 +76,8 @@ struct history *history_down(struct history *history, int flags)
 
 int parse_expressionable_single(struct history *history);
 void parse_expressionable(struct history *history);
+void parse_body(size_t* variable_size, struct history* history);
+void parse_keyword(struct history* history);
 
 
 void parser_scope_new()
@@ -732,7 +734,6 @@ void make_variable_node_and_register(
     make_variable_node(dtype, name_token, value_node);
     struct node* var_node = node_pop();
 
-    #warning "Remeber to calculate the scope offset and push to the scope"
     // Calculate the scope offset
     parser_scope_offset(var_node, history);
     // Push the variable node to the scope
