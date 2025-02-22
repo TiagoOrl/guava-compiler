@@ -2,5 +2,8 @@
 
 int sum(int a, char b)
 {
-    a = (50 + 20);
+    if (1)
+    {
+        int somatoria = 26;
+    }
 }

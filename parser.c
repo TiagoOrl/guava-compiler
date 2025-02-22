@@ -145,6 +145,15 @@ static void expect_sym(char c)
 }
 
 
+static void expect_keyword(const char *keyword)
+{
+    struct token* next_token = token_next();
+
+    if (!next_token || next_token->type != TOKEN_TYPE_KEYWORD || !S_EQ(next_token->sval, keyword))
+        compiler_error(current_process, "Expecting the keyword %s", keyword);
+}
+
+
 static void expect_op(const char* op)
 {
     struct token* next_token = token_next();
@@ -1346,6 +1355,25 @@ void parse_variable_function_or_struct_union(struct history* history)
 }
 
 
+void parse_if_statement(struct history* history)
+{
+    expect_keyword("if");
+    expect_op("(");
+
+    // COND
+    parse_expressionable_root(history);
+    expect_sym(')');
+
+    struct node* cond_node = node_pop();
+    size_t var_size = 0;
+
+    parse_body(&var_size, history);
+    struct node* body_node = node_pop();
+
+    make_if_node(cond_node, body_node, NULL);
+}
+
+
 void parse_keyword(struct history* history)
 {
     struct token* token = token_peek_next();
@@ -1355,6 +1383,14 @@ void parse_keyword(struct history* history)
         parse_variable_function_or_struct_union(history);
         return;
     }
+
+    if (S_EQ(token->sval, "if"))
+    {
+        parse_if_statement(history);
+        return;
+    }
+    
+    
 }
 
 
