@@ -2,5 +2,5 @@
 
 int sum(int a, char b)
 {
-    a = 40;
+    a = (50 + 20);
 }
