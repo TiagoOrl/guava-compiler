@@ -1,6 +1,6 @@
 
 
-int sum(int a)
+int sum(int a, char b)
 {
 
 }
