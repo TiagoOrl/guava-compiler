@@ -543,6 +543,8 @@ void symresolver_initialize(struct compile_process* process);
 void symresolver_new_table(struct compile_process* process);
 void symresolver_end_table(struct compile_process* process);
 
+
+size_t function_node_argument_stack_addition(struct node* node);
 struct node* node_create(struct node* _node);
 struct node* node_from_sym(struct symbol* sym);
 struct node* node_from_symbol(struct compile_process* current_process, const char* name);
