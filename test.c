@@ -1,4 +1,6 @@
-struct dog {
-    int x;
-    int y;
-};
+
+
+int sum(int a)
+{
+
+}

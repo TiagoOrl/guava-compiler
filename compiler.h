@@ -374,6 +374,31 @@ struct node
             // pointer to the largest variable node in the statements vector
             struct node* largest_var_node;
         } body;
+
+        struct function
+        {   
+            int flags;
+
+            // return type i.e.  void, int, long, etc...
+            struct datatype rtype;
+            // the function name
+            const char* name;
+
+            struct function_arguments
+            {
+                // vector of struct node*, must be NODE_TYPE_VARIABLE
+                struct vector* vector;
+
+                // How much to add to the EBP to find the first argument
+                size_t stack_addition;
+            } args;
+
+            // Pointer to the function body node, NULL if this is a function prototype
+            struct node* body_n;
+
+            // the stack size for all variables inside this function.
+            size_t stack_size;
+        } func;
     };
     
     union 
@@ -430,6 +455,11 @@ enum
     DATA_SIZE_WORD = 2,
     DATA_SIZE_DWORD = 4,
     DATA_SIZE_DDWORD = 8
+};
+
+enum
+{
+    FUNCTION_NODE_FLAG_IS_NATIVE = 0b00000001,
 };
 
 int compile_file(const char* filename, const char* out_filename, int flags);
@@ -507,6 +537,7 @@ void scope_finish(struct compile_process* process);
 struct scope* scope_current(struct compile_process* process);
 
 struct symbol* symresolver_get_symbol(struct compile_process* process, const char* name);
+struct symbol* symresolver_get_symbol_for_native_function(struct compile_process* process, const char* name);
 void symresolver_build_for_node(struct compile_process* process, struct node* node);
 void symresolver_initialize(struct compile_process* process);
 void symresolver_new_table(struct compile_process* process);
@@ -520,6 +551,11 @@ void make_struct_node(const char* name, struct node* body_node);
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
 void make_bracket_node(struct node* node);
 void make_body_node(struct vector* body_vec, size_t size, bool padded, struct node* largest_var_node);
+void make_function_node(
+    struct datatype* return_type, 
+    const char* name, 
+    struct vector* arguments,
+    struct node* body_node);
 
 struct node* node_pop();
 struct node* node_peek();
