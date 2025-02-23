@@ -417,6 +417,11 @@ struct node
                 // else {}
                 struct node* next;
             } if_stmt;
+
+            struct else_stmt
+            {
+                struct node* body_node;
+            } else_stmt;
         } stmt;
     };
     
@@ -569,6 +574,7 @@ struct node* node_from_sym(struct symbol* sym);
 struct node* node_from_symbol(struct compile_process* current_process, const char* name);
 struct node* struct_node_for_name(struct compile_process* current_process, const char* name);
 void make_if_node(struct node* cond_node, struct node* body_node, struct node* next_node);
+void make_else_node(struct node* body_node);
 void make_struct_node(const char* name, struct node* body_node);
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
 void make_exp_parentheses_node(struct node* exp_node);

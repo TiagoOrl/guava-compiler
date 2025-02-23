@@ -6,4 +6,14 @@ int sum(int a, char b)
     {
         int somatoria = 26;
     }
-}q
+
+    else if (2) 
+    {
+        int next = 54681;
+    }
+
+    else 
+    {
+        char d = 'g';
+    }
+}

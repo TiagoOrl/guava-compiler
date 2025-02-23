@@ -83,6 +83,7 @@ void parse_body(size_t* variable_size, struct history* history);
 void parse_keyword(struct history* history);
 void parse_expressionable_root(struct history* history);
 struct vector* parse_function_arguments(struct history* history);
+struct node* parse_else_or_else_if(struct history* history);
 
 
 void parser_scope_new()
@@ -171,10 +172,18 @@ static struct token *token_peek_next()
     return vector_peek_no_increment(current_process->token_vec);
 }
 
+
 static bool token_next_is_operator(const char* op)
 {
     struct token* token = token_peek_next();
     return token_is_operator(token, op);
+}
+
+
+static bool token_next_is_keyword(const char* keyword)
+{
+    struct token* token = token_peek_next();
+    return token_is_keyword(token, keyword);
 }
 
 
@@ -1370,7 +1379,43 @@ void parse_if_statement(struct history* history)
     parse_body(&var_size, history);
     struct node* body_node = node_pop();
 
-    make_if_node(cond_node, body_node, NULL);
+    make_if_node(cond_node, body_node, parse_else_or_else_if(history));
+}
+
+struct node* parse_else(struct history* history)
+{
+    size_t var_size = 0;
+    parse_body(&var_size, history);
+    struct node* body_node = node_pop();
+    make_else_node(body_node);
+    return node_pop();
+}
+
+
+struct node* parse_else_or_else_if(struct history* history)
+{
+    struct node* node = NULL;
+
+    if (token_next_is_keyword("else"))
+    {
+        // We have an else or else if
+
+        // pop of the "else"
+        token_next();
+
+        if (token_next_is_keyword("if"))
+        {
+            // this is an else if, not an else
+            parse_if_statement(history_down(history, 0));
+            node = node_pop();
+            return node;
+        }
+
+        // its an else statement
+        node = parse_else(history_down(history, 0));
+    }
+
+    return node;
 }
 
 
