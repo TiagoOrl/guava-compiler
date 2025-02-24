@@ -133,10 +133,17 @@ void make_function_node(
         .func.rtype = *return_type,
         .func.args.stack_addition = DATA_SIZE_DDWORD
     });
-
-    return func_node;
-
+     
     #warning "Don't forget to build the frame elements"
+}
+
+
+void make_return_node(struct node* exp_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_STATEMENT_RETURN,
+        .stmt.return_stmt.exp = exp_node
+    });
 }
 
 

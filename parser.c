@@ -1419,6 +1419,26 @@ struct node* parse_else_or_else_if(struct history* history)
 }
 
 
+void parse_return(struct history* history)
+{
+    expect_keyword("return");
+
+    // for return with no expressions, i.e. "return;"
+    if (token_next_is_symbol(';'))
+    {
+        expect_sym(';');
+        make_return_node(NULL);
+        return;
+    }
+
+    // expressionable return i.e. return 50 + x + y...
+    parse_expressionable_root(history);
+    struct node* exp_node = node_pop();
+    make_return_node(exp_node);
+    expect_sym(';');
+}
+
+
 void parse_keyword(struct history* history)
 {
     struct token* token = token_peek_next();
@@ -1426,6 +1446,12 @@ void parse_keyword(struct history* history)
     if (is_keyword_variable_modifier(token->sval) || keyword_is_datatype(token->sval))
     {
         parse_variable_function_or_struct_union(history);
+        return;
+    }
+
+    if (S_EQ(token->sval, "return"))
+    {
+        parse_return(history);
         return;
     }
 

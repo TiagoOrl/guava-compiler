@@ -408,6 +408,12 @@ struct node
 
         struct statement
         {
+            struct return_stmt
+            {
+                // The expression of the return i.e. return (40 + x - y ...)
+                struct node* exp;
+            } return_stmt;
+
             struct if_stmt
             {
                 // if (COND)
@@ -585,6 +591,7 @@ void make_function_node(
     const char* name, 
     struct vector* arguments,
     struct node* body_node);
+void make_return_node(struct node* exp_node);
 
 struct node* node_pop();
 struct node* node_peek();

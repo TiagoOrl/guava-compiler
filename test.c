@@ -2,6 +2,7 @@
 
 int sum(int a, char b)
 {
+    int val = 458;
     if (1)
     {
         int somatoria = 26;
@@ -16,4 +17,6 @@ int sum(int a, char b)
     {
         char d = 'g';
     }
+
+    return 56 + val;
 }
