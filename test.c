@@ -18,5 +18,5 @@ int sum(int a, char b)
         char d = 'g';
     }
 
-    return 56 + val;
+    return 56 + 150;
 }
