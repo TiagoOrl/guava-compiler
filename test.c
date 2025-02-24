@@ -2,21 +2,10 @@
 
 int sum(int a, char b)
 {
-    int val = 458;
-    if (1)
-    {
-        int somatoria = 26;
-    }
+    int i = 0;
 
-    else if (2) 
+    for(i = 0;i < 50; i += 10)
     {
-        int next = 54681;
-    }
 
-    else 
-    {
-        char d = 'g';
     }
-
-    return 56 + 150;
 }

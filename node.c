@@ -63,6 +63,22 @@ struct node* node_peek_expressionable_or_null()
 }
 
 
+void make_for_node(
+    struct node* init_node, 
+    struct node* cond_node, 
+    struct node* loop_node, 
+    struct node* body_node
+) {
+    node_create(&(struct node){
+        .type = NODE_TYPE_STATEMENT_FOR,
+        .stmt.for_stmt.init_node = init_node,
+        .stmt.for_stmt.cond_node = cond_node,
+        .stmt.for_stmt.loop_node = loop_node,
+        .stmt.for_stmt.body_node = body_node
+    });
+}
+
+
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op)
 {
     assert(left_node);
