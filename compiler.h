@@ -326,6 +326,12 @@ struct node
             const char* op;
         } exp;
 
+        struct parenthesis
+        {
+            // the expression inside the parenthesis node
+            struct node* exp;
+        } parenthesis;
+
         struct var
         {
             struct datatype type;
@@ -374,6 +380,55 @@ struct node
             // pointer to the largest variable node in the statements vector
             struct node* largest_var_node;
         } body;
+
+        struct function
+        {   
+            int flags;
+
+            // return type i.e.  void, int, long, etc...
+            struct datatype rtype;
+            // the function name
+            const char* name;
+
+            struct function_arguments
+            {
+                // vector of struct node*, must be NODE_TYPE_VARIABLE
+                struct vector* vector;
+
+                // How much to add to the EBP to find the first argument
+                size_t stack_addition;
+            } args;
+
+            // Pointer to the function body node, NULL if this is a function prototype
+            struct node* body_n;
+
+            // the stack size for all variables inside this function.
+            size_t stack_size;
+        } func;
+
+        struct statement
+        {
+            struct return_stmt
+            {
+                // The expression of the return i.e. return (40 + x - y ...)
+                struct node* exp;
+            } return_stmt;
+
+            struct if_stmt
+            {
+                // if (COND)
+                struct node* cond_node;
+                // {}
+                struct node* body_node;
+                // else {}
+                struct node* next;
+            } if_stmt;
+
+            struct else_stmt
+            {
+                struct node* body_node;
+            } else_stmt;
+        } stmt;
     };
     
     union 
@@ -430,6 +485,11 @@ enum
     DATA_SIZE_WORD = 2,
     DATA_SIZE_DWORD = 4,
     DATA_SIZE_DDWORD = 8
+};
+
+enum
+{
+    FUNCTION_NODE_FLAG_IS_NATIVE = 0b00000001,
 };
 
 int compile_file(const char* filename, const char* out_filename, int flags);
@@ -507,19 +567,31 @@ void scope_finish(struct compile_process* process);
 struct scope* scope_current(struct compile_process* process);
 
 struct symbol* symresolver_get_symbol(struct compile_process* process, const char* name);
+struct symbol* symresolver_get_symbol_for_native_function(struct compile_process* process, const char* name);
 void symresolver_build_for_node(struct compile_process* process, struct node* node);
 void symresolver_initialize(struct compile_process* process);
 void symresolver_new_table(struct compile_process* process);
 void symresolver_end_table(struct compile_process* process);
 
+
+size_t function_node_argument_stack_addition(struct node* node);
 struct node* node_create(struct node* _node);
 struct node* node_from_sym(struct symbol* sym);
 struct node* node_from_symbol(struct compile_process* current_process, const char* name);
 struct node* struct_node_for_name(struct compile_process* current_process, const char* name);
+void make_if_node(struct node* cond_node, struct node* body_node, struct node* next_node);
+void make_else_node(struct node* body_node);
 void make_struct_node(const char* name, struct node* body_node);
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
+void make_exp_parentheses_node(struct node* exp_node);
 void make_bracket_node(struct node* node);
 void make_body_node(struct vector* body_vec, size_t size, bool padded, struct node* largest_var_node);
+void make_function_node(
+    struct datatype* return_type, 
+    const char* name, 
+    struct vector* arguments,
+    struct node* body_node);
+void make_return_node(struct node* exp_node);
 
 struct node* node_pop();
 struct node* node_peek();
@@ -530,6 +602,8 @@ void node_set_vector(struct vector* vec, struct vector* root_vec);
 bool node_is_expressionable(struct node* node);
 bool node_is_struct_or_union_variable(struct node* node);
 struct node* node_peek_expressionable_or_null();
+bool node_is_expression_or_parentheses(struct node* node);
+bool node_is_value_type(struct node* node);
 
 
 struct array_brackets* array_brackets_new();

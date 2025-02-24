@@ -6,6 +6,8 @@ static struct compile_process *current_process;
 static struct token *parser_last_token;
 
 extern struct node* parser_current_body;
+extern struct node* parser_current_function;
+struct node* parser_blank_node;
 extern struct expressionable_op_precedence_group op_precedence[TOTAL_OPERATOR_GROUPS];
 
 
@@ -48,10 +50,11 @@ struct parser_scope_entity* parser_scope_last_entity_stop_global_scope()
 
 enum
 {
-        HISTORY_FLAG_INSIDE_UNION = 0b00000001,
-     HISTORY_FLAG_IS_UPWARD_STACK = 0b00000010,
-     HISTORY_FLAG_IS_GLOBAL_SCOPE = 0b00000100,
-    HISTORY_FLAG_INSIDE_STRUCTURE = 0b00001000,
+            HISTORY_FLAG_INSIDE_UNION = 0b00000001,
+         HISTORY_FLAG_IS_UPWARD_STACK = 0b00000010,
+         HISTORY_FLAG_IS_GLOBAL_SCOPE = 0b00000100,
+        HISTORY_FLAG_INSIDE_STRUCTURE = 0b00001000,
+    HISTORY_FLAG_INSIDE_FUNCTION_BODY = 0b00010000
 };
 
 struct history
@@ -78,6 +81,9 @@ int parse_expressionable_single(struct history *history);
 void parse_expressionable(struct history *history);
 void parse_body(size_t* variable_size, struct history* history);
 void parse_keyword(struct history* history);
+void parse_expressionable_root(struct history* history);
+struct vector* parse_function_arguments(struct history* history);
+struct node* parse_else_or_else_if(struct history* history);
 
 
 void parser_scope_new()
@@ -140,6 +146,15 @@ static void expect_sym(char c)
 }
 
 
+static void expect_keyword(const char *keyword)
+{
+    struct token* next_token = token_next();
+
+    if (!next_token || next_token->type != TOKEN_TYPE_KEYWORD || !S_EQ(next_token->sval, keyword))
+        compiler_error(current_process, "Expecting the keyword %s", keyword);
+}
+
+
 static void expect_op(const char* op)
 {
     struct token* next_token = token_next();
@@ -157,10 +172,18 @@ static struct token *token_peek_next()
     return vector_peek_no_increment(current_process->token_vec);
 }
 
+
 static bool token_next_is_operator(const char* op)
 {
     struct token* token = token_peek_next();
     return token_is_operator(token, op);
+}
+
+
+static bool token_next_is_keyword(const char* keyword)
+{
+    struct token* token = token_peek_next();
+    return token_is_keyword(token, keyword);
 }
 
 
@@ -321,15 +344,62 @@ void parse_exp_normal(struct history* history)
     node_push(exp_node);
 }
 
+
+void parser_deal_with_additional_expression()
+{
+    if (token_peek_next()->type == TOKEN_TYPE_OPERATOR)
+        parse_expressionable(history_begin(0));
+}
+
+
+void parse_for_parentheses(struct history* history)
+{
+    expect_op("(");
+    struct node* left_node = NULL;
+    struct node* tmp_node = node_peek_or_null();
+
+    if (tmp_node && node_is_value_type(tmp_node))
+    {
+        left_node = tmp_node;
+        node_pop();
+    }
+
+    struct node* exp_node = parser_blank_node;
+
+    if (!token_next_is_symbol(')'))
+    {
+        parse_expressionable_root(history_begin(0));
+        exp_node = node_pop();
+    }
+
+    expect_sym(')');
+
+    make_exp_parentheses_node(exp_node);
+
+    if (left_node)
+    {
+        struct node* parenthesis_node = node_pop();
+        make_exp_node(left_node, parenthesis_node, "()");
+    }
+
+    parser_deal_with_additional_expression();
+}
+
+
 int parse_exp(struct history* history)
 {
-    parse_exp_normal(history);
+    if (S_EQ(token_peek_next()->sval, "("))
+        parse_for_parentheses(history);
+        
+    else 
+        parse_exp_normal(history);
+    
     return 0;
 }
 
 void parse_identifier(struct history* history)
 {
-    assert(token_peek_next()->type == NODE_TYPE_IDENTIFIER);
+    assert(token_peek_next()->type == TOKEN_TYPE_IDENTIFIER);
     parse_single_token_to_node();
 }
 
@@ -666,8 +736,14 @@ void parser_scope_offset_for_stack(struct node* node, struct history* history)
 
     if (upward_stack)
     {
-        #warning "Handle upward stack"
-        compiler_error(current_process, "Not yet implemented\n");
+        size_t stack_addition = function_node_argument_stack_addition(parser_current_function);
+        offset = stack_addition;
+
+        if (last_entity)
+        { 
+            offset = datatype_size(&variable_node(last_entity->node)->var.type);
+        }
+
     }
 
     if (last_entity)
@@ -805,6 +881,55 @@ void parse_variable(struct datatype* dtype, struct token* name_token, struct his
     }
 
     make_variable_node_and_register(history, dtype, name_token, value_node);
+}
+
+
+void parse_function_body(struct history* history)
+{
+    parse_body(NULL, history_down(history, history->flags | HISTORY_FLAG_INSIDE_FUNCTION_BODY));
+
+}
+
+
+void parse_function(struct datatype* return_type, struct token* name_token, struct history* history)
+{
+    struct vector* arguments = NULL;
+    parser_scope_new();
+
+    make_function_node(return_type, name_token->sval, NULL, NULL);
+    struct node* function_node = node_peek();
+
+    parser_current_function = function_node;
+
+    if (datatype_is_struct_or_union(return_type))
+    {
+        function_node->func.args.stack_addition += DATA_SIZE_DWORD;
+    }
+
+    expect_op("(");
+    arguments = parse_function_arguments(history_begin(0));
+    expect_sym(')');
+
+    function_node->func.args.vector = arguments;
+
+    if (symresolver_get_symbol_for_native_function(current_process, name_token->sval))
+    {
+        function_node->func.flags |= FUNCTION_NODE_FLAG_IS_NATIVE;
+    }
+
+    if (token_next_is_symbol('{'))
+    {
+        parse_function_body(history_begin(0));
+        struct node* body_node = node_pop();
+        function_node->func.body_n = body_node;
+    } 
+
+    else
+        expect_sym(';');
+
+    
+    parser_current_function = NULL;
+    parser_scope_finish();
 }
 
 
@@ -1120,6 +1245,64 @@ void parse_struct_or_union(struct datatype* dtype)
 }
 
 
+void token_read_dots(size_t amount)
+{
+    for (int i = 0;i < amount; i++)
+    {
+        expect_op(".");
+    }
+}
+
+
+void parse_variable_full(struct history* history)
+{
+    struct datatype dtype;
+    parse_datatype(&dtype);
+    struct token* name_token = NULL;
+
+    if (token_peek_next()->type == TOKEN_TYPE_IDENTIFIER)
+    {
+        name_token = token_next();
+    }
+
+    parse_variable(&dtype, name_token, history);
+}
+
+
+struct vector* parse_function_arguments(struct history* history)
+{
+    parser_scope_new();
+    struct vector* arguments_vec = vector_create(sizeof(struct node*));
+
+    while(!token_next_is_symbol(')'))
+    {
+        if (token_next_is_operator("."))
+        {
+            token_read_dots(3);
+            parser_scope_finish();
+            return arguments_vec;
+        }
+
+        parse_variable_full(history_down(history, history->flags | HISTORY_FLAG_IS_UPWARD_STACK));
+        struct node* arguments_node = node_pop();
+
+
+        vector_push(arguments_vec, &arguments_node);
+
+        if (!token_next_is_operator(","))
+        {
+            break;
+        }
+
+        // pop of the comma
+        token_next();
+    }
+
+    parser_scope_finish();
+    return arguments_vec;
+}
+
+
 void parse_variable_function_or_struct_union(struct history* history)
 {
     struct datatype dtype;
@@ -1147,6 +1330,12 @@ void parse_variable_function_or_struct_union(struct history* history)
 
     //int abc()
     // check if this is a funciton declaration
+    if (token_next_is_operator("("))
+    {
+        parse_function(&dtype, name_token, history);
+        return;
+    }
+
     parse_variable(&dtype, name_token, history);
 
     if (token_is_operator(token_peek_next(), ","))
@@ -1175,6 +1364,81 @@ void parse_variable_function_or_struct_union(struct history* history)
 }
 
 
+void parse_if_statement(struct history* history)
+{
+    expect_keyword("if");
+    expect_op("(");
+
+    // COND
+    parse_expressionable_root(history);
+    expect_sym(')');
+
+    struct node* cond_node = node_pop();
+    size_t var_size = 0;
+
+    parse_body(&var_size, history);
+    struct node* body_node = node_pop();
+
+    make_if_node(cond_node, body_node, parse_else_or_else_if(history));
+}
+
+struct node* parse_else(struct history* history)
+{
+    size_t var_size = 0;
+    parse_body(&var_size, history);
+    struct node* body_node = node_pop();
+    make_else_node(body_node);
+    return node_pop();
+}
+
+
+struct node* parse_else_or_else_if(struct history* history)
+{
+    struct node* node = NULL;
+
+    if (token_next_is_keyword("else"))
+    {
+        // We have an else or else if
+
+        // pop of the "else"
+        token_next();
+
+        if (token_next_is_keyword("if"))
+        {
+            // this is an else if, not an else
+            parse_if_statement(history_down(history, 0));
+            node = node_pop();
+            return node;
+        }
+
+        // its an else statement
+        node = parse_else(history_down(history, 0));
+    }
+
+    return node;
+}
+
+
+void parse_return(struct history* history)
+{
+    expect_keyword("return");
+
+    // for return with no expressions, i.e. "return;"
+    if (token_next_is_symbol(';'))
+    {
+        expect_sym(';');
+        make_return_node(NULL);
+        return;
+    }
+
+    // expressionable return i.e. return 50 + x + y...
+    parse_expressionable_root(history);
+    struct node* exp_node = node_pop();
+    make_return_node(exp_node);
+    expect_sym(';');
+}
+
+
 void parse_keyword(struct history* history)
 {
     struct token* token = token_peek_next();
@@ -1184,6 +1448,20 @@ void parse_keyword(struct history* history)
         parse_variable_function_or_struct_union(history);
         return;
     }
+
+    if (S_EQ(token->sval, "return"))
+    {
+        parse_return(history);
+        return;
+    }
+
+    if (S_EQ(token->sval, "if"))
+    {
+        parse_if_statement(history);
+        return;
+    }
+    
+    
 }
 
 
@@ -1206,6 +1484,7 @@ int parse_expressionable_single(struct history *history)
 
         case TOKEN_TYPE_IDENTIFIER:
             parse_identifier(history);
+            res = 0;
         break;
 
         case TOKEN_TYPE_OPERATOR:
@@ -1273,6 +1552,11 @@ int parse(struct compile_process *process)
     current_process = process;
     parser_last_token = NULL;
     node_set_vector(process->node_vec, process->node_tree_vec);
+
+    parser_blank_node = node_create(&(struct node){
+        .type = NODE_TYPE_BLANK
+    });
+
     struct node *node = NULL;
     vector_set_peek_pointer(process->token_vec, 0);
     while (parse_next() == 0)

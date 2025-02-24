@@ -6,6 +6,7 @@ struct vector* node_vector = NULL;
 struct vector* node_vector_root = NULL;
 
 struct node* parser_current_body = NULL;
+struct node* parser_current_function = NULL;
 
 void node_set_vector(struct vector* vec, struct vector* root_vec)
 {
@@ -70,6 +71,15 @@ void make_exp_node(struct node* left_node, struct node* right_node, const char* 
 }
 
 
+void make_exp_parentheses_node(struct node* exp_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_EXPRESSION_PARENTHESES,
+        .parenthesis.exp = exp_node
+    });
+}
+
+
 void make_bracket_node(struct node* node)
 {
     node_create(&(struct node){
@@ -105,6 +115,54 @@ void make_struct_node(const char* name, struct node* body_node)
         ._struct.body_n = body_node,
         ._struct.name = name,
         .flags = flags
+    });
+}
+
+
+void make_function_node(
+    struct datatype* return_type, 
+    const char* name, 
+    struct vector* arguments,
+    struct node* body_node)
+{
+    struct node* func_node = node_create(&(struct node){
+        .type = NODE_TYPE_FUNCTION,
+        .func.name = name,
+        .func.args.vector = arguments,
+        .func.body_n = body_node,
+        .func.rtype = *return_type,
+        .func.args.stack_addition = DATA_SIZE_DDWORD
+    });
+     
+    #warning "Don't forget to build the frame elements"
+}
+
+
+void make_return_node(struct node* exp_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_STATEMENT_RETURN,
+        .stmt.return_stmt.exp = exp_node
+    });
+}
+
+
+void make_else_node(struct node* body_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_STATEMENT_ELSE,
+        .stmt.else_stmt.body_node = body_node
+    });
+}
+
+
+void make_if_node(struct node* cond_node, struct node* body_node, struct node* next_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_STATEMENT_IF,
+        .stmt.if_stmt.cond_node = cond_node,
+        .stmt.if_stmt.body_node = body_node,
+        .stmt.if_stmt.next = next_node
     });
 }
 
@@ -146,7 +204,8 @@ struct node* node_create(struct node* _node)
 {
     struct node* node = malloc(sizeof(struct node));
     memcpy(node, _node, sizeof(struct node));
-    #warning "We should set the binded owner and binded function here"
+    node->binded.owner = parser_current_body;
+    node->binded.function = parser_current_function;
     node_push(node);
     return node;
 }
@@ -200,3 +259,32 @@ struct node* variable_node_or_list(struct node* node)
 
     return variable_node(node);
 }
+
+
+size_t function_node_argument_stack_addition(struct node* node)
+{
+    assert(node->type == NODE_TYPE_FUNCTION);
+    return node->func.args.stack_addition;
+}
+
+
+bool node_is_expression_or_parentheses(struct node* node)
+{
+    return 
+        node->type == NODE_TYPE_EXPRESSION_PARENTHESES || 
+        node->type == NODE_TYPE_EXPRESSION;
+}
+
+
+bool node_is_value_type(struct node* node)
+{
+    return 
+        node_is_expression_or_parentheses(node) ||
+        node->type == NODE_TYPE_IDENTIFIER ||
+        node->type == NODE_TYPE_NUMBER ||
+        node->type == NODE_TYPE_UNARY ||
+        node->type == NODE_TYPE_TENARY ||
+        node->type == NODE_TYPE_STRING;
+}
+
+
