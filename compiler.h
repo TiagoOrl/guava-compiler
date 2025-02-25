@@ -428,6 +428,28 @@ struct node
             {
                 struct node* body_node;
             } else_stmt;
+
+            struct for_stmt
+            {
+                struct node* init_node;
+                struct node* cond_node;
+                struct node* loop_node;
+                struct node* body_node;
+            } for_stmt;
+
+            struct while_stmt
+            {
+                struct node* exp_node;
+                struct node* body_node;
+            } while_stmt;
+
+
+            struct do_while_stmt 
+            {
+                struct node* exp_node;
+                struct node* body_node;
+            } do_while_stmt;
+
         } stmt;
     };
     
@@ -591,6 +613,14 @@ void make_function_node(
     const char* name, 
     struct vector* arguments,
     struct node* body_node);
+void make_for_node(
+    struct node* init_node, 
+    struct node* cond_node, 
+    struct node* loop_node, 
+    struct node* body_node
+);
+void make_while_node(struct node* exp_node, struct node* body_node);
+void make_do_while_node(struct node* exp_node, struct node* body_node);
 void make_return_node(struct node* exp_node);
 
 struct node* node_pop();
