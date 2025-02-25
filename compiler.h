@@ -443,6 +443,13 @@ struct node
                 struct node* body_node;
             } while_stmt;
 
+
+            struct do_while_stmt 
+            {
+                struct node* exp_node;
+                struct node* body_node;
+            } do_while_stmt;
+
         } stmt;
     };
     
@@ -613,6 +620,7 @@ void make_for_node(
     struct node* body_node
 );
 void make_while_node(struct node* exp_node, struct node* body_node);
+void make_do_while_node(struct node* exp_node, struct node* body_node);
 void make_return_node(struct node* exp_node);
 
 struct node* node_pop();
