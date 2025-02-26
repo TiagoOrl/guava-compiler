@@ -2,8 +2,8 @@
 
 int sum(int a, char b)
 {
-    switch (1)
+    while (12)
     {
-
+        continue;;
     }
 }
