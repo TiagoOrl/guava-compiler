@@ -9,6 +9,7 @@
         "cstring": "cpp",
         "locale": "cpp",
         "stdio.h": "c",
-        "__node_handle": "c"
+        "__node_handle": "c",
+        "cmath": "c"
     }
 }
