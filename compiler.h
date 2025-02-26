@@ -466,6 +466,11 @@ struct node
             } switch_stmt;
 
         } stmt;
+
+        struct node_label
+        {
+            struct node* name;
+        } label;
     };
     
     union 
@@ -616,6 +621,7 @@ struct node* node_create(struct node* _node);
 struct node* node_from_sym(struct symbol* sym);
 struct node* node_from_symbol(struct compile_process* current_process, const char* name);
 struct node* struct_node_for_name(struct compile_process* current_process, const char* name);
+void make_label_node(struct node* label_name_node);
 void make_continue_node();
 void make_break_node();
 void make_if_node(struct node* cond_node, struct node* body_node, struct node* next_node);

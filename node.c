@@ -115,6 +115,15 @@ void make_for_node(
 }
 
 
+void make_label_node(struct node* label_name_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_LABEL,
+        .label.name = label_name_node
+    });
+}
+
+
 void make_continue_node()
 {
     node_create(&(struct node){.type=NODE_TYPE_STATEMENT_CONTINUE});

@@ -125,6 +125,7 @@ void parse_expressionable(struct history *history);
 void parse_body(size_t* variable_size, struct history* history);
 void parse_keyword(struct history* history);
 void parse_expressionable_root(struct history* history);
+void parse_label(struct history* history);
 struct vector* parse_function_arguments(struct history* history);
 struct node* parse_else_or_else_if(struct history* history);
 
@@ -988,6 +989,13 @@ void parse_symbol()
 
         node_push(body_node);
     }
+    else if (token_next_is_symbol(':'))
+    {
+        parse_label(history_begin(0));
+        return;
+    }
+
+    compiler_error(current_process, "Invalid symbol was provided\n");
 }
 
 
@@ -1607,6 +1615,20 @@ void parse_break(struct history* history)
     expect_keyword("break");
     expect_sym(';');
     make_break_node();
+}
+
+
+void parse_label(struct history* history)
+{
+    expect_sym(':');
+    struct node* label_name_node = node_pop();
+
+    if (label_name_node->type != NODE_TYPE_IDENTIFIER)
+        compiler_error(current_process, "Expected an identifier for label\n");
+
+
+    make_label_node(label_name_node);
+
 }
 
 
