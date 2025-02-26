@@ -83,6 +83,22 @@ void make_do_while_node(struct node* exp_node, struct node* body_node)
 }
 
 
+void make_switch_node(
+    struct node* exp_node, 
+    struct node* body_node, 
+    struct vector* cases, 
+    bool has_default_case
+) {
+    node_create(&(struct node){
+        .type = NODE_TYPE_STATEMENT_SWITCH,
+        .stmt.switch_stmt.exp = exp_node,
+        .stmt.switch_stmt.body = body_node,
+        .stmt.switch_stmt.cases = cases,
+        .stmt.switch_stmt.has_default_case = has_default_case
+    });
+}
+
+
 void make_for_node(
     struct node* init_node, 
     struct node* cond_node, 
@@ -96,6 +112,18 @@ void make_for_node(
         .stmt.for_stmt.loop_node = loop_node,
         .stmt.for_stmt.body_node = body_node
     });
+}
+
+
+void make_continue_node()
+{
+    node_create(&(struct node){.type=NODE_TYPE_STATEMENT_CONTINUE});
+}
+
+
+void make_break_node()
+{
+    node_create(&(struct node){.type=NODE_TYPE_STATEMENT_BREAK});
 }
 
 
