@@ -115,6 +115,15 @@ void make_for_node(
 }
 
 
+void make_goto_node(struct node* label_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_STATEMENT_GOTO,
+        .stmt._goto.label = label_node
+    });
+}
+
+
 void make_label_node(struct node* label_name_node)
 {
     node_create(&(struct node){
