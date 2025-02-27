@@ -50,12 +50,13 @@ struct parser_scope_entity* parser_scope_last_entity_stop_global_scope()
 
 enum
 {
-            HISTORY_FLAG_INSIDE_UNION = 0b00000001,
-         HISTORY_FLAG_IS_UPWARD_STACK = 0b00000010,
-         HISTORY_FLAG_IS_GLOBAL_SCOPE = 0b00000100,
-        HISTORY_FLAG_INSIDE_STRUCTURE = 0b00001000,
-    HISTORY_FLAG_INSIDE_FUNCTION_BODY = 0b00010000,
-    HISTORY_FLAG_IN_SWITCH_STATEMENT  = 0b00100000
+                            HISTORY_FLAG_INSIDE_UNION = 0b00000001,
+                         HISTORY_FLAG_IS_UPWARD_STACK = 0b00000010,
+                         HISTORY_FLAG_IS_GLOBAL_SCOPE = 0b00000100,
+                        HISTORY_FLAG_INSIDE_STRUCTURE = 0b00001000,
+                    HISTORY_FLAG_INSIDE_FUNCTION_BODY = 0b00010000,
+                     HISTORY_FLAG_IN_SWITCH_STATEMENT = 0b00100000,
+    HISTORY_FLAG_PARENTHESES_IS_NOT_A_FUNCTION_CALL   = 0b01000000
 };
 
 struct history_cases
@@ -125,6 +126,8 @@ void parse_expressionable(struct history *history);
 void parse_body(size_t* variable_size, struct history* history);
 void parse_keyword(struct history* history);
 void parse_expressionable_root(struct history* history);
+void parse_label(struct history* history);
+void parse_for_ternary(struct history* history);
 struct vector* parse_function_arguments(struct history* history);
 struct node* parse_else_or_else_if(struct history* history);
 
@@ -429,12 +432,62 @@ void parse_for_parentheses(struct history* history)
 }
 
 
+void parse_for_comma(struct history* history)
+{
+    token_next();
+    struct node* left_node = node_pop();
+    parse_expressionable_root(history);
+    struct node* right_node = node_pop();
+    make_exp_node(left_node, right_node, ",");
+}
+
+
+void parse_for_array(struct history* history)
+{
+    struct node* left_node = node_peek_or_null();
+
+    if (left_node)
+    {
+        node_pop();
+    }
+
+    expect_op("[");
+    parse_expressionable_root(history);
+    expect_sym(']');
+
+    struct node* exp_node = node_pop();
+    make_bracket_node(exp_node);
+
+
+    if (left_node)
+    {
+        struct node* bracket_node = node_pop();
+        make_exp_node(left_node, bracket_node, "[]");
+    }
+}
+
+
 int parse_exp(struct history* history)
 {
     if (S_EQ(token_peek_next()->sval, "("))
         parse_for_parentheses(history);
+
+    else if(S_EQ(token_peek_next()->sval, "["))
+    {
+        parse_for_array(history);
+    }
         
-    else 
+    else if (S_EQ(token_peek_next()->sval, "?"))
+    {
+        parse_for_ternary(history);
+    }
+
+    else if(S_EQ(token_peek_next()->sval, ","))
+    {
+        parse_for_comma(history);
+    }
+
+    else
         parse_exp_normal(history);
     
     return 0;
@@ -988,6 +1041,13 @@ void parse_symbol()
 
         node_push(body_node);
     }
+    else if (token_next_is_symbol(':'))
+    {
+        parse_label(history_begin(0));
+        return;
+    }
+
+    compiler_error(current_process, "Invalid symbol was provided\n");
 }
 
 
@@ -1471,6 +1531,22 @@ void parse_keyword_parentheses_expression(const char* keyword)
 }
 
 
+void parse_case(struct history* history)
+{
+    expect_keyword("case");
+    parse_expressionable_root(history);
+    struct node* case_exp_node = node_pop();
+    expect_sym(':');
+    make_case_node(case_exp_node);
+
+    if(case_exp_node->type != NODE_TYPE_NUMBER)
+        compiler_error(current_process, "We only support numbers in our subset of C at this time\n");
+    
+    struct node* case_node = node_pop();
+    parser_register_case(history, case_node);
+}
+
+
 void parse_switch(struct history* history)
 {
     struct parser_history_switch _switch = parser_new_switch_statement(history);
@@ -1610,6 +1686,47 @@ void parse_break(struct history* history)
 }
 
 
+void parse_goto(struct history* history)
+{
+    expect_keyword("goto");
+    parse_identifier(history_begin(0));
+    expect_sym(';');
+
+    struct node* label_node = node_pop();
+    make_goto_node(label_node);
+}
+
+
+void parse_label(struct history* history)
+{
+    expect_sym(':');
+    struct node* label_name_node = node_pop();
+
+    if (label_name_node->type != NODE_TYPE_IDENTIFIER)
+        compiler_error(current_process, "Expected an identifier for label\n");
+
+
+    make_label_node(label_name_node);
+
+}
+
+
+void parse_for_ternary(struct history* history)
+{
+    struct node* cond_node = node_pop();
+    expect_op("?");
+    parse_expressionable_root(history_down(history, HISTORY_FLAG_PARENTHESES_IS_NOT_A_FUNCTION_CALL));
+    struct node* true_result_node = node_pop();
+    expect_sym(':');
+    parse_expressionable_root(history_down(history, HISTORY_FLAG_PARENTHESES_IS_NOT_A_FUNCTION_CALL));
+    struct node* false_result_node = node_pop();
+    make_ternary_node(true_result_node, false_result_node);
+
+    struct node* ternary_node = node_pop();
+    make_exp_node(cond_node, ternary_node, "?");
+}
+
+
 void parse_keyword(struct history* history)
 {
     struct token* token = token_peek_next();
@@ -1623,11 +1740,13 @@ void parse_keyword(struct history* history)
     if (S_EQ(token->sval, "break"))
     {
         parse_break(history);
+        return;
     }
 
     else if(S_EQ(token->sval, "continue"))
     {
         parse_continue(history);
+        return;
     }
 
     if (S_EQ(token->sval, "return"))
@@ -1665,8 +1784,20 @@ void parse_keyword(struct history* history)
         parse_switch(history);
         return;
     }
+
+    else if(S_EQ(token->sval, "goto"))
+    {
+        parse_goto(history);
+        return;
+    }
+
+    else if(S_EQ(token->sval, "case"))
+    {
+        parse_case(history);
+        return;
+    }
     
-    
+    compiler_error(current_process, "Ivalid keyword\n");
 }
 
 

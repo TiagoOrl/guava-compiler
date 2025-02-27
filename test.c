@@ -2,8 +2,5 @@
 
 int sum(int a, char b)
 {
-    while (12)
-    {
-        continue;;
-    }
+    a = array[45];
 }

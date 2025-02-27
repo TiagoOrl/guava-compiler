@@ -99,6 +99,25 @@ void make_switch_node(
 }
 
 
+void make_ternary_node(struct node* true_result_node, struct node* false_result_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_TENARY,
+        .ternary.true_node = true_result_node,
+        .ternary.false_node = false_result_node
+    });
+}
+
+
+void make_case_node(struct node* exp_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_STATEMENT_CASE,
+        .stmt._case.exp_node = exp_node
+    });
+}
+
+
 void make_for_node(
     struct node* init_node, 
     struct node* cond_node, 
@@ -111,6 +130,24 @@ void make_for_node(
         .stmt.for_stmt.cond_node = cond_node,
         .stmt.for_stmt.loop_node = loop_node,
         .stmt.for_stmt.body_node = body_node
+    });
+}
+
+
+void make_goto_node(struct node* label_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_STATEMENT_GOTO,
+        .stmt._goto.label = label_node
+    });
+}
+
+
+void make_label_node(struct node* label_name_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_LABEL,
+        .label.name = label_name_node
     });
 }
 
