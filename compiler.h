@@ -488,6 +488,12 @@ struct node
         {
             struct node* name;
         } label;
+
+        struct cast
+        {
+            struct datatype dtype;
+            struct node* operand_node;
+        } cast;
     };
     
     union 
@@ -498,7 +504,6 @@ struct node
         unsigned long lnum;
         unsigned long long llnum;
     };
-    
 };
 
 enum
@@ -638,6 +643,7 @@ struct node* node_create(struct node* _node);
 struct node* node_from_sym(struct symbol* sym);
 struct node* node_from_symbol(struct compile_process* current_process, const char* name);
 struct node* struct_node_for_name(struct compile_process* current_process, const char* name);
+void make_cast_node(struct datatype* dtype, struct node* operand_node);
 void make_label_node(struct node* label_name_node);
 void make_ternary_node(struct node* true_result_node, struct node* false_result_node);
 void make_goto_node(struct node* label_node);

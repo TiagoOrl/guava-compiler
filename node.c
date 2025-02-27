@@ -268,6 +268,16 @@ void make_if_node(struct node* cond_node, struct node* body_node, struct node* n
 }
 
 
+void make_cast_node(struct datatype* dtype, struct node* operand_node)
+{
+    node_create(&(struct node){
+        .type = NODE_TYPE_CAST,
+        .cast.dtype = *dtype,
+        .cast.operand_node = operand_node
+    });
+}
+
+
 struct node* node_from_sym(struct symbol* sym)
 {
     if (sym->type != SYMBOL_TYPE_NODE)
