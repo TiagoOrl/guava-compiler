@@ -2,11 +2,5 @@
 
 int sum(int a, char b)
 {
-    while (12)
-    {
-        continue;
-        goto abc;
-    }
-
-    abc:
+    a = 50 ? 20 : 154;
 }

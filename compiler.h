@@ -349,6 +349,12 @@ struct node
             int aoffset;
         } var;
 
+        struct node_ternary
+        {
+            struct node* true_node;
+            struct node* false_node;
+        } ternary;
+
         struct varlist
         {
             // list of struct node* variables
@@ -464,6 +470,12 @@ struct node
                 struct vector* cases;
                 bool has_default_case;
             } switch_stmt;
+
+
+            struct _case_stmt
+            {
+                struct node* exp_node;
+            } _case;
 
             struct _goto_stmt
             {
@@ -627,8 +639,10 @@ struct node* node_from_sym(struct symbol* sym);
 struct node* node_from_symbol(struct compile_process* current_process, const char* name);
 struct node* struct_node_for_name(struct compile_process* current_process, const char* name);
 void make_label_node(struct node* label_name_node);
+void make_ternary_node(struct node* true_result_node, struct node* false_result_node);
 void make_goto_node(struct node* label_node);
 void make_continue_node();
+void make_case_node(struct node* exp_node);
 void make_break_node();
 void make_if_node(struct node* cond_node, struct node* body_node, struct node* next_node);
 void make_else_node(struct node* body_node);
