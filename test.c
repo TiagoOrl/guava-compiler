@@ -2,5 +2,5 @@
 
 int sum(int a, char b)
 {
-    a = 50 , 30;
+    a = array[45];
 }
