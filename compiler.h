@@ -488,6 +488,12 @@ struct node
         {
             struct node* name;
         } label;
+
+        struct cast
+        {
+            struct datatype dtype;
+            struct node* operand_node;
+        } cast;
     };
     
     union 
@@ -498,7 +504,6 @@ struct node
         unsigned long lnum;
         unsigned long long llnum;
     };
-    
 };
 
 enum
@@ -638,6 +643,7 @@ struct node* node_create(struct node* _node);
 struct node* node_from_sym(struct symbol* sym);
 struct node* node_from_symbol(struct compile_process* current_process, const char* name);
 struct node* struct_node_for_name(struct compile_process* current_process, const char* name);
+void make_cast_node(struct datatype* dtype, struct node* operand_node);
 void make_label_node(struct node* label_name_node);
 void make_ternary_node(struct node* true_result_node, struct node* false_result_node);
 void make_goto_node(struct node* label_node);
@@ -710,6 +716,55 @@ struct expressionable_op_precedence_group
     char* operators[MAX_OPERATORS_IN_GROUP];
     int associtivity;
 };
+
+
+struct fixup;
+
+// returns true if the fixup was successful
+typedef bool (*FIXUP_FIX)(struct fixup* fixup);
+
+// removes the fixup from memory, the implementation of this function should
+// free any memory related to the fixup
+typedef void (*FIXUP_END)(struct fixup* fixup);
+
+struct fixup_config
+{
+    FIXUP_FIX fix;
+    FIXUP_END end;
+    void* private;
+};
+
+struct fixup_system
+{
+    struct vector* vector_fixups;
+};
+
+enum
+{
+    FIXUP_FLAG_RESOLVED = 0b00000001
+};
+
+struct fixup
+{
+    int flags;
+    struct fixup_system* system;
+    struct fixup_config config;
+};
+
+struct fixup;
+struct fixup_system* fixup_sys_new();
+struct fixup_config* fixup_config(struct fixup* fixup);
+void fixup_free(struct fixup* fixup);
+void fixup_start_iteration(struct fixup_system* system);
+struct fixup* fixup_next(struct fixup_system* system);
+void fixup_sys_fixups_free(struct fixup_system* system);
+void fixup_sys_free(struct fixup_system* system);
+int fixup_sys_unresolved_fixups_count(struct fixup_system* system);
+struct fixup* fixup_register(struct fixup_system* system, struct fixup_config* config);
+bool fixup_resolve(struct fixup* fixup);
+void* fixup_private(struct fixup* fixup);
+bool fixups_resolve(struct fixup_system* system);
+
 
 
 #endif
