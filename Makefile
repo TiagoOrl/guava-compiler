@@ -1,4 +1,4 @@
-OBJECTS= ./build/helper.o ./build/array.o ./build/symresolver.o ./build/scope.o ./build/compiler.o ./build/cprocess.o ./build/lexer.o ./build/token.o ./build/lex_process.o ./build/parser.o ./build/datatype.o ./build/node.o ./build/expressionable.o ./build/helpers/buffer.o ./build/helpers/vector.o 
+OBJECTS= ./build/fixup.o ./build/helper.o ./build/array.o ./build/symresolver.o ./build/scope.o ./build/compiler.o ./build/cprocess.o ./build/lexer.o ./build/token.o ./build/lex_process.o ./build/parser.o ./build/datatype.o ./build/node.o ./build/expressionable.o ./build/helpers/buffer.o ./build/helpers/vector.o 
 INCLUDES= -I./
 
 all: ${OBJECTS}
@@ -30,6 +30,9 @@ all: ${OBJECTS}
 
 ./build/scope.o: ./scope.c
 	gcc scope.c ${INCLUDES} -o ./build/scope.o -g -c
+
+./build/fixup.o: ./fixup.c
+	gcc fixup.c ${INCLUDES} -o ./build/fixup.o -g -c
 
 ./build/expressionable.o: ./expressionable.c
 	gcc expressionable.c ${INCLUDES} -o ./build/expressionable.o -g -c
