@@ -1470,6 +1470,13 @@ struct vector* parse_function_arguments(struct history* history)
 }
 
 
+void parse_forward_declaration(struct datatype* dtype)
+{
+    // since this is a forward declaration, parse the struct
+    parse_struct(dtype);
+}
+
+
 void parse_variable_function_or_struct_union(struct history* history)
 {
     struct datatype dtype;
@@ -1483,6 +1490,12 @@ void parse_variable_function_or_struct_union(struct history* history)
         symresolver_build_for_node(current_process, su_node);
         node_push(su_node);
 
+        return;
+    }
+
+    if (token_next_is_symbol(';'))
+    {
+        parse_forward_declaration(&dtype);
         return;
     }
 

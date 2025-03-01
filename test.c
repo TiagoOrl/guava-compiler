@@ -1,6 +1,13 @@
+struct dog;
 
-
-int sum(int a, char b)
+struct dog
 {
-    a = (short) 30;
+    int x;
+};
+
+
+int main(int x, int y)
+{
+    struct dog* _dog;
+    x = (int) 30;
 }
