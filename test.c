@@ -5,6 +5,11 @@ struct dog
     int x;
 };
 
+union abc
+{
+    int asd;
+} _abc;
+
 
 int main(int x, int y)
 {

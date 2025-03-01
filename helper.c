@@ -95,6 +95,9 @@ struct node* variable_struct_or_union_body_node(struct node* node)
     if (node->var.type.type == DATA_TYPE_STRUCT)
         return node->var.type.struct_node->_struct.body_n;
 
-    printf("No union NODE are yet implemented\n\n");
-    exit(1);
+    if (node->var.type.type == DATA_TYPE_UNION)
+        return node->var.type.union_node->_union.body_n;
+    
+
+    return NULL;
 }
