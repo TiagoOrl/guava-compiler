@@ -1,18 +1,17 @@
-struct dog;
 
-struct dog
+struct book
 {
-    int x;
+    char name[30];
 };
 
-union abc
-{
-    int asd;
-} _abc;
 
+int test(char* fmt)
+{
+    return 1;
+}
 
 int main(int x, int y)
 {
-    struct dog* _dog;
-    x = (int) 30;
+    struct book* books;
+    return test(56, books[0], 1000);
 }

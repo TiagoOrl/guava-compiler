@@ -343,6 +343,32 @@ struct node* struct_node_for_name(struct compile_process* current_process, const
 }
 
 
+bool node_is_expression(struct node* node, const char* op)
+{
+    return node->type == NODE_TYPE_EXPRESSION && S_EQ(node->exp.op, op);
+}
+
+
+bool is_array_node(struct node* node)
+{
+    return node_is_expression(node, "[]");
+}
+
+
+bool is_node_assignment(struct node* node)
+{
+    if (node->type != NODE_TYPE_EXPRESSION)
+        return false;
+
+    return 
+        S_EQ(node->exp.op, "=") || 
+        S_EQ(node->exp.op, "+=") || 
+        S_EQ(node->exp.op, "-=") ||
+        S_EQ(node->exp.op, "/=") || 
+        S_EQ(node->exp.op, "*=");
+}
+
+
 struct node* node_create(struct node* _node)
 {
     struct node* node = malloc(sizeof(struct node));
