@@ -367,6 +367,21 @@ struct node
             struct node* inner;
         } bracket;
 
+        struct _union
+        {
+            const char* name;
+            struct node* body_n;
+            /**
+             * struct abc
+             * {
+             * 
+             * } var_name;
+             * 
+             * NULL if no variable attached to structure
+             */
+            struct node* var;
+        } _union;
+
         struct _struct
         {
             const char* name;
@@ -642,6 +657,7 @@ size_t function_node_argument_stack_addition(struct node* node);
 struct node* node_create(struct node* _node);
 struct node* node_from_sym(struct symbol* sym);
 struct node* node_from_symbol(struct compile_process* current_process, const char* name);
+struct node* union_node_for_name(struct compile_process* current_process, const char* name);
 struct node* struct_node_for_name(struct compile_process* current_process, const char* name);
 void make_cast_node(struct datatype* dtype, struct node* operand_node);
 void make_label_node(struct node* label_name_node);
@@ -652,6 +668,7 @@ void make_case_node(struct node* exp_node);
 void make_break_node();
 void make_if_node(struct node* cond_node, struct node* body_node, struct node* next_node);
 void make_else_node(struct node* body_node);
+void make_union_node(const char* name, struct node* body_node);
 void make_struct_node(const char* name, struct node* body_node);
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
 void make_exp_parentheses_node(struct node* exp_node);
@@ -689,6 +706,9 @@ bool node_is_struct_or_union_variable(struct node* node);
 struct node* node_peek_expressionable_or_null();
 bool node_is_expression_or_parentheses(struct node* node);
 bool node_is_value_type(struct node* node);
+bool node_is_expression(struct node* node, const char* op);
+bool is_array_node(struct node* node);
+bool is_node_assignment(struct node* node);
 
 
 struct array_brackets* array_brackets_new();

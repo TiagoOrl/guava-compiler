@@ -202,6 +202,24 @@ void make_body_node(struct vector* body_vec, size_t size, bool padded, struct no
 }
 
 
+void make_union_node(const char* name, struct node* body_node)
+{
+    int flags = 0;
+
+    if (!body_node)
+    {
+        flags |= NODE_FLAG_IS_FORWARD_DECLARATION;
+    }
+
+    node_create(&(struct node){
+        .type = NODE_TYPE_UNION,
+        ._union.body_n = body_node,
+        ._union.name = name,
+        .flags = flags
+    });
+}
+
+
 void make_struct_node(const char* name, struct node* body_node)
 {
     int flags = 0;
@@ -297,6 +315,20 @@ struct node* node_from_symbol(struct compile_process* current_process, const cha
 }
 
 
+struct node* union_node_for_name(struct compile_process* current_process, const char* name)
+{
+    struct node* node = node_from_symbol(current_process, name);
+
+    if (!node)
+        return NULL;
+
+    if (node->type != NODE_TYPE_UNION)
+        return NULL;
+
+    return node;
+}
+
+
 struct node* struct_node_for_name(struct compile_process* current_process, const char* name)
 {
     struct node* node = node_from_symbol(current_process, name);
@@ -308,6 +340,32 @@ struct node* struct_node_for_name(struct compile_process* current_process, const
         return NULL;
 
     return node;
+}
+
+
+bool node_is_expression(struct node* node, const char* op)
+{
+    return node->type == NODE_TYPE_EXPRESSION && S_EQ(node->exp.op, op);
+}
+
+
+bool is_array_node(struct node* node)
+{
+    return node_is_expression(node, "[]");
+}
+
+
+bool is_node_assignment(struct node* node)
+{
+    if (node->type != NODE_TYPE_EXPRESSION)
+        return false;
+
+    return 
+        S_EQ(node->exp.op, "=") || 
+        S_EQ(node->exp.op, "+=") || 
+        S_EQ(node->exp.op, "-=") ||
+        S_EQ(node->exp.op, "/=") || 
+        S_EQ(node->exp.op, "*=");
 }
 
 
@@ -346,8 +404,7 @@ struct node* variable_node(struct node* node)
         break;
 
         case NODE_TYPE_UNION:
-            // var_node = node->_union.var;
-            assert(1 == 0 && "Unions are not yet supported");
+            var_node = node->_union.var;
         break;
     }
 
